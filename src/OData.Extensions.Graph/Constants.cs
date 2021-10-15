@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Microsoft.AspNetCore.OData.Extensions.GraphQL
+namespace OData.Extensions.Graph
 {
     internal class Constants
     {

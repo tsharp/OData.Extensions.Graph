@@ -1,7 +1,7 @@
-﻿using System;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
+using System;
 
-namespace Microsoft.AspNetCore.OData.Extensions.GraphQL
+namespace OData.Extensions.Graph
 {
     public sealed class GraphEndpointConventionBuilder : IEndpointConventionBuilder
     {

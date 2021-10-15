@@ -1,7 +1,7 @@
 ﻿using HotChocolate;
 using Microsoft.OData.Edm;
 
-namespace Microsoft.AspNetCore.OData.Extensions.GraphQL.Metadata
+namespace OData.Extensions.Graph.Metadata
 {
     public interface ISchemaTranslator
     {

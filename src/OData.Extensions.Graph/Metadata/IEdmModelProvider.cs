@@ -2,7 +2,7 @@
 using Microsoft.OData.Edm;
 using System.Threading.Tasks;
 
-namespace Microsoft.AspNetCore.OData.Extensions.GraphQL.Metadata
+namespace OData.Extensions.Graph.Metadata
 {
     public interface IEdmModelProvider
     {

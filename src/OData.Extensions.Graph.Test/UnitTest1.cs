@@ -1,9 +1,8 @@
 using HotChocolate.Language;
-using Microsoft.OData.Edm;
 using System;
 using Xunit;
 
-namespace Microsoft.AspNetCore.OData.Extensions.GraphQL.Test
+namespace OData.Extensions.Graph.Test
 {
     public class UnitTest1
     {

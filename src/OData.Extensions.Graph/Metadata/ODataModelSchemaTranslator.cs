@@ -1,19 +1,19 @@
 ﻿using HotChocolate;
 using HotChocolate.Execution;
+using HotChocolate.Types;
 using Microsoft.AspNetCore.Http;
 using Microsoft.OData.Edm;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.OData.ModelBuilder;
 using System;
-using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text;
-using HotChocolate.Types;
+using System.Threading.Tasks;
 
-namespace Microsoft.AspNetCore.OData.Extensions.GraphQL.Metadata
+namespace OData.Extensions.Graph.Metadata
 {
     public class ODataModelSchemaTranslator : ISchemaTranslator, IEdmModelProvider
     {
@@ -60,7 +60,7 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL.Metadata
         public IEdmModel Translate(ISchema schema)
         {
             EdmModel model = new EdmModel(true);
-            
+
             // This will parse and add models from the localized api, stitched schemas
             // need a separate pass on this.
             var local = ParseLocalSchema(new GraphConventionModelBuilder(), schema).GetEdmModel();
@@ -79,7 +79,7 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL.Metadata
             }
 
             var container = model.AddEntityContainer("OData.Graph", "Container");
-            
+
             MergeEntityContainers(container, local);
             MergeEntityContainers(container, @delegate);
 
@@ -129,7 +129,7 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL.Metadata
                 typeof(IList<>).Name
             };
 
-            if(type.IsArray)
+            if (type.IsArray)
             {
                 collectionType = type.GetElementType();
                 return true;
@@ -182,11 +182,11 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL.Metadata
 
             // Process Reflection Only Remote Schema
             foreach (var objectType in schema.Types.OfType<ObjectType>()
-                .Where(t => 
+                .Where(t =>
                     t.IsNamedType() &&
                     t.IsObjectType() &&
                     !t.Name.Value.StartsWith("__") &&
-                    t.Name != schema.MutationType?.Name && 
+                    t.Name != schema.MutationType?.Name &&
                     t.Name != schema.QueryType?.Name))
             {
                 var entityType = new EdmEntityType("Delegated.Entity", objectType.Name.Value);
@@ -195,8 +195,8 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL.Metadata
                 foreach (var field in objectType.Fields.Where(f => !f.Name.Value.StartsWith("__")))
                 {
                     var resolved = model.FindType(field.RuntimeType.Name);
-                    
-                    if(resolved != null && (resolved as IEdmPrimitiveType) != null)
+
+                    if (resolved != null && (resolved as IEdmPrimitiveType) != null)
                     {
                         var primitive = resolved as IEdmPrimitiveType;
                         entityType.AddStructuralProperty(field.Name.Value, primitive.PrimitiveKind);
@@ -209,15 +209,15 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL.Metadata
                 }
             }
 
-            foreach(var unresolved in unresolvedFields)
+            foreach (var unresolved in unresolvedFields)
             {
                 var resolved = model.FindType($"Delegated.Entity.{unresolved.Item2.Type.TypeName()}");
-                
-                if(resolved == null)
+
+                if (resolved == null)
                 {
                     resolved = model.FindType($"Delegated.Type.{unresolved.Item2.Type.TypeName()}");
                 }
-                
+
                 var resolvedEntity = resolved as IEdmEntityType;
                 var resolvedComplex = resolved as IEdmComplexType;
 
@@ -226,8 +226,8 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL.Metadata
                     unresolved.Item1.AddProperty(new EdmStructuralProperty(
                         unresolved.Item1,
                         unresolved.Item2.Name.Value, new EdmComplexTypeReference(resolvedComplex, true)));
-                } 
-                else if(resolvedEntity != null)
+                }
+                else if (resolvedEntity != null)
                 {
                     unresolved.Item1.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo()
                     {
@@ -253,7 +253,7 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL.Metadata
             {
                 var resolvedEntity = model.FindType($"Delegated.Entity.{objectType.Type.TypeName()}") as IEdmEntityType;
 
-                if(resolvedEntity == null)
+                if (resolvedEntity == null)
                 {
                     continue;
                 }
@@ -276,8 +276,8 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL.Metadata
         {
             // Process Local Schema
             foreach (var objectType in schema.QueryType.Fields
-                .Where(f => 
-                    f.Name.HasValue && 
+                .Where(f =>
+                    f.Name.HasValue &&
                     !f.Name.Value.StartsWith("__") &&
                     f.Member != null))
             {

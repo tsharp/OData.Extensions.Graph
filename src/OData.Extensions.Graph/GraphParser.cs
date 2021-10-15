@@ -1,4 +1,4 @@
-﻿namespace Microsoft.AspNetCore.OData.Extensions.GraphQL
+﻿namespace OData.Extensions.Graph
 {
     public class GraphParser
     {

@@ -1,11 +1,11 @@
 ﻿namespace Microsoft.AspNetCore.Builder
 {
+    using global::OData.Extensions.Graph;
+    using global::OData.Extensions.Graph.Metadata;
     using HotChocolate;
     using HotChocolate.AspNetCore.Serialization;
     using HotChocolate.Execution.Configuration;
     using Microsoft.AspNetCore.Http;
-    using Microsoft.AspNetCore.OData.Extensions.GraphQL;
-    using Microsoft.AspNetCore.OData.Extensions.GraphQL.Metadata;
     using Microsoft.AspNetCore.Routing;
     using Microsoft.Extensions.DependencyInjection;
     using System;

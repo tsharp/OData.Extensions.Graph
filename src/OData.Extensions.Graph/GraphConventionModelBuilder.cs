@@ -1,6 +1,6 @@
 ﻿using Microsoft.OData.ModelBuilder;
 
-namespace Microsoft.AspNetCore.OData.Extensions.GraphQL
+namespace OData.Extensions.Graph
 {
     public class GraphConventionModelBuilder : ODataConventionModelBuilder
     {

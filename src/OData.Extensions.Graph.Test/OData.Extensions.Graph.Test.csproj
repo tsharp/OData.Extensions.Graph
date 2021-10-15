@@ -21,9 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GraphQLSample.Api\GraphQLSample.Api.csproj" />
-    <ProjectReference Include="..\ODataExtensionsSecurity\Microsoft.AspNetCore.OData.Extensions.Security.csproj" />
-    <ProjectReference Include="..\ODataGraphQL\Microsoft.AspNetCore.OData.Extensions.GraphQL.csproj" />
+    <ProjectReference Include="..\OData.Extensions.Graph\OData.Extensions.Graph.csproj" />
   </ItemGroup>
 
 </Project>

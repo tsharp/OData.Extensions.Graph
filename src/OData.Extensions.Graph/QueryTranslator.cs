@@ -1,11 +1,11 @@
-﻿using Microsoft.OData.UriParser;
-using System;
-using HotChocolate.Language;
+﻿using HotChocolate.Language;
 using Microsoft.OData.Edm;
+using Microsoft.OData.UriParser;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Microsoft.AspNetCore.OData.Extensions.GraphQL
+namespace OData.Extensions.Graph
 {
     public class TranslatedQuery
     {
@@ -34,7 +34,7 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL
             var selectClause = parser.ParseSelectAndExpand(); //parse $select, $expand
             var selectionSetNode = BuildFromSelectExpandClause(entitySet, selectClause);
 
-            var querySelectionSet = new SelectionSetNode(new ISelectionNode[] { 
+            var querySelectionSet = new SelectionSetNode(new ISelectionNode[] {
                 new FieldNode(
                     null,
                     new NameNode(entitySet.Name),
@@ -89,7 +89,7 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL
             }
 
             var selectionSet = new SelectionSetNode(selections);
-            
+
             return selectionSet;
         }
 
@@ -123,9 +123,9 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL
 
         private IEdmEntitySet GetEntitySet(string selection)
         {
-           // foreach (FieldType fieldType in _context.Schema.Query.Fields)
-              //  if (String.Compare(fieldType.Name, selection, StringComparison.OrdinalIgnoreCase) == 0)
-                    return GetEntitySet(_edmModel, selection);
+            // foreach (FieldType fieldType in _context.Schema.Query.Fields)
+            //  if (String.Compare(fieldType.Name, selection, StringComparison.OrdinalIgnoreCase) == 0)
+            return GetEntitySet(_edmModel, selection);
 
             throw new InvalidOperationException("Field name " + selection + " not found in schema query");
         }

@@ -15,8 +15,4 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\GraphQLSample.Api.Dto\GraphQLSample.Api.Dto.csproj" />
-  </ItemGroup>
-
 </Project>

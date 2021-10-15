@@ -1,14 +1,12 @@
-﻿using GraphQLSample.Api.Dto;
-using HotChocolate;
+﻿using HotChocolate;
 using HotChocolate.AspNetCore;
 using HotChocolate.AspNetCore.Serialization;
 using HotChocolate.Execution;
 using HotChocolate.Execution.Processing;
 using HotChocolate.Language;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.OData.Extensions.GraphQL.Metadata;
-using Microsoft.OData;
 using Microsoft.OData.UriParser;
+using OData.Extensions.Graph.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,14 +14,14 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace Microsoft.AspNetCore.OData.Extensions.GraphQL
+namespace OData.Extensions.Graph
 {
     public class GraphDataMiddleware : MiddlewareBase
     {
         private IEdmModelProvider modelProvider;
 
         public GraphDataMiddleware(
-            Http.RequestDelegate next,
+            Microsoft.AspNetCore.Http.RequestDelegate next,
             IEdmModelProvider modelProvider,
             IRequestExecutorResolver executorResolver,
             IHttpResultSerializer resultSerializer,
@@ -38,11 +36,11 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL
             var path = Regex.Replace(context.Request.Path.ToString(), @"^(\/api\/)", "");
 
             var model = await modelProvider.GetModelAsync(context.Request);
-            
+
             ODataUriParser parser = new ODataUriParser(model,
                 new Uri($"{context.Request.Scheme}://{context.Request.Host.ToUriComponent()}/api"),
                 new Uri($"{path}{context.Request.QueryString}", UriKind.Relative));
-            
+
             parser.Settings.MaximumExpansionCount = 5;
             parser.Settings.MaximumExpansionDepth = 2;
             parser.Resolver = new ODataUriResolver()
@@ -78,14 +76,14 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL
 
             var translatedQuery = qt.Translate(parser);
             var result = await ExecuteGraphQuery(context, translatedQuery.PathSegment, translatedQuery.DocumentNode);
-            
+
             context.Response.ContentType = "application/json";
-            
+
             await JsonSerializer.SerializeAsync(
-                context.Response.Body, 
-                result, 
-                typeof(object), 
-                Constants.Serialization.Options, 
+                context.Response.Body,
+                result,
+                typeof(object),
+                Constants.Serialization.Options,
                 context.RequestAborted);
 
             return true;
@@ -119,14 +117,14 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL
 
                 var queryResult = result as QueryResult;
 
-                if(queryResult != null)
+                if (queryResult != null)
                 {
                     var resultMap = (ResultMapList)queryResult.Data[entitySet];
                     var values = new List<IDictionary<string, object>>();
 
                     response.Add("values", values);
 
-                    foreach(var entity in resultMap)
+                    foreach (var entity in resultMap)
                     {
                         var entityDict = new Dictionary<string, object>();
                         values.Add(entityDict);

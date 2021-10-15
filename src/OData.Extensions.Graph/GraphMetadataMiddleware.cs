@@ -3,17 +3,17 @@ using HotChocolate.AspNetCore;
 using HotChocolate.AspNetCore.Serialization;
 using HotChocolate.Execution;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.OData.Extensions.GraphQL.Metadata;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.OData.Edm.Csdl;
 using Microsoft.OData.Edm.Validation;
+using OData.Extensions.Graph.Metadata;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Xml;
 
-namespace Microsoft.AspNetCore.OData.Extensions.GraphQL
+namespace OData.Extensions.Graph
 {
     public class GraphMetadataMiddleware : MiddlewareBase
     {
@@ -21,7 +21,7 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL
         private readonly IMemoryCache memoryCache;
 
         public GraphMetadataMiddleware(
-            Http.RequestDelegate next,
+            Microsoft.AspNetCore.Http.RequestDelegate next,
             IMemoryCache memoryCache,
             IEdmModelProvider modelProvider,
             IRequestExecutorResolver executorResolver,
@@ -100,7 +100,7 @@ namespace Microsoft.AspNetCore.OData.Extensions.GraphQL
             // Do some fancy stuff if we need to but it's mostly for caching ...
             var cacheId = await modelProvider.GetModelCacheIdAsync(request);
 
-            if (string.IsNullOrWhiteSpace(cacheId)) 
+            if (string.IsNullOrWhiteSpace(cacheId))
             {
                 return new MemoryStream(await GetRawMetadata(request));
             }

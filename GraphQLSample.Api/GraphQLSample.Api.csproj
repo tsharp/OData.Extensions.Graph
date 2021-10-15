@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HotChocolate.AspNetCore.Playground" Version="10.5.5" />
+    <PackageReference Include="HotChocolate.AspNetCore" Version="12.0.*" />
+    <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="12.0.*" />
+    <PackageReference Include="HotChocolate.Stitching.Redis" Version="12.0.*" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.15.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.*" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="1.18.*" />
+    <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.18.*" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' != 'netcoreapp3.1' ">
+    <FrameworkReference Include="Microsoft.AspNetCore.App" Version="5.0.*" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.*" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="5.0.*" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="5.0.*" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.*" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="5.0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="5.0.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GraphQLSample.Api.Dto\GraphQLSample.Api.Dto.csproj" />
+    <ProjectReference Include="..\ODataGraphQL\Microsoft.AspNetCore.OData.Extensions.GraphQL.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="wwwroot\.well-known\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+</Project>

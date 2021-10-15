@@ -1,0 +1,15 @@
+steps:
+- bash: |
+    echo "##vso[build.updatebuildnumber]$(major).$(minor).$(patch)"
+  name: SetMainBuildName
+- task: Docker@2
+  displayName: Build docker image
+  inputs:
+    containerRegistry: 'hackathon2356104672'
+    repository: official/api/graphqlsample
+    command: buildAndPush
+    Dockerfile: ./GraphQLSample.Api/Dockerfile
+    buildContext: .
+    tags: |
+      latest
+      $(Build.BuildNumber)-$(Build.SourceVersion)

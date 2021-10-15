@@ -1,0 +1,40 @@
+# Azure Pipelines configuration that builds and packages the extension.
+# To learn more about Azure Pipelines: https://aka.ms/learn-azure-pipelines
+
+# specific branch build with batching
+trigger:
+  batch: true
+  branches:
+    include:
+    - main
+    - release
+
+variables:
+  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+  major: 1
+  minor: 0
+
+stages:
+- stage:
+  displayName: VersionAndBuildBranch
+  condition: ne(variables['Build.SourceBranch'], 'refs/heads/main')
+  jobs:
+  - job: BuildAndPackage
+    variables:
+       prpatch: $[counter(variables['system.pullrequest.pullrequestid'], 0)]
+       brpatch: $[counter(variables['build.sourcebranchname'], 0)]
+    pool:
+      vmimage: 'ubuntu-20.04'
+    steps:
+    - template: azure-pipelines-rc.yml
+- stage:
+  displayName: VersionAndBuildMain
+  condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+  jobs:
+  - job: BuildAndPackage
+    variables:
+       patch: $[counter(variables['minor'], 0)]
+    pool:
+      vmimage: 'ubuntu-20.04'
+    steps:
+    - template: azure-pipelines-official.yml

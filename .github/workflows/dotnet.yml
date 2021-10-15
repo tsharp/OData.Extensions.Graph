@@ -2,20 +2,32 @@ name: .NET
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - release/*
+      - feature/*
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - release/*
+      - feature/*
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v0.9.7
         with:
           versionSpec: "5.x"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.x
+
+      - name: Check out Code
+        uses: actions/checkout@v2
 
       - name: Determine Version
         id: gitversion
@@ -23,11 +35,6 @@ jobs:
         with:
           useConfigFile: true
           configFilePath: ./.github/gitversion.yml
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: 5.0.x
 
       - name: Restore dependencies
         run: dotnet restore

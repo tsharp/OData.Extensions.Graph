@@ -1,6 +1,6 @@
 # OData.Extensions.Graph
 
-A MSFT Hackathon 2021 Project
+[![.NET](https://github.com/tsharp/OData.Extensions.Graph/actions/workflows/dotnet.yml/badge.svg)](https://github.com/tsharp/OData.Extensions.Graph/actions/workflows/dotnet.yml)
 
 Graph / GraphQL Extensions for OData
 

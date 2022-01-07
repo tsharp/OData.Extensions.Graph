@@ -10,6 +10,7 @@
     using Microsoft.Extensions.DependencyInjection;
     using System;
     using System.Linq;
+    using System.Text;
     using static Microsoft.AspNetCore.Routing.Patterns.RoutePatternFactory;
 
     public static class DependencyInjectionExtensions
@@ -56,7 +57,15 @@
 
             requestPipeline
                 .UseMiddleware<GraphMetadataMiddleware>(schemaNameOrDefault)
-                .UseMiddleware<GraphDataMiddleware>(schemaNameOrDefault);
+                .UseMiddleware<GraphDataMiddleware>(schemaNameOrDefault)
+                .Use(async (context, next) =>
+                {
+                    context.Response.StatusCode = 400;
+                    context.Response.ContentType = "application/json";
+                    var content = Encoding.UTF8.GetBytes("{ \"error\": \"Bad Request\" }");
+                    await context.Response.Body.WriteAsync(content, 0, content.Length);
+                    await context.Response.Body.FlushAsync();
+                });
 
             return new GraphEndpointConventionBuilder(
                 endpointRouteBuilder

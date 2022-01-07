@@ -191,6 +191,7 @@ namespace OData.Extensions.Graph.Metadata
             {
                 var entityType = new EdmEntityType("Delegated.Entity", objectType.Name.Value);
                 model.AddElement(entityType);
+                var keys = new List<IEdmStructuralProperty>();
 
                 foreach (var field in objectType.Fields.Where(f => !f.Name.Value.StartsWith("__")))
                 {
@@ -199,13 +200,25 @@ namespace OData.Extensions.Graph.Metadata
                     if (resolved != null && (resolved as IEdmPrimitiveType) != null)
                     {
                         var primitive = resolved as IEdmPrimitiveType;
-                        entityType.AddStructuralProperty(field.Name.Value, primitive.PrimitiveKind);
+                        var property = entityType.AddStructuralProperty(field.Name.Value, primitive.PrimitiveKind);
+                        
+                        if( field.Name.Value.Equals("id", StringComparison.OrdinalIgnoreCase) ||
+                            field.Name.Value.Equals($"{objectType.Name.Value}id", StringComparison.OrdinalIgnoreCase) ||
+                            field.Name.Value.Equals($"{objectType.Name.Value}_id", StringComparison.OrdinalIgnoreCase)) {
+                            keys.Add(property);
+                        }
+
                         continue;
                     }
 
                     // TODO: Deeper inspection of properties to infer if it's a navigation property
                     // or if it's a complex type ...
                     unresolvedFields.Add(new Tuple<EdmEntityType, ObjectField>(entityType, field));
+                }
+
+                if (keys.Any())
+                {
+                    entityType.AddKeys(keys);
                 }
             }
 

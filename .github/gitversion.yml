@@ -2,6 +2,7 @@
 mode: ContinuousDeployment
 branches:
   feature:
+    regex: ^feature?[/-]
     tag: rc
   pull-request:
     tag: pr

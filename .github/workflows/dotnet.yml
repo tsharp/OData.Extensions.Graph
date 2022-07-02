@@ -24,7 +24,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: 5.0.x
+          dotnet-version: 6.0.x
 
       - name: Check out Code
         uses: actions/checkout@v2
@@ -52,6 +52,6 @@ jobs:
 
       - name: Push generated package to Nuget registry
         run: dotnet nuget push ./package/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_SECRET }}
-      
+
       # - name: Push generated package to GitHub registry
       #   run: dotnet nuget push ./package/*.nupkg  --source https://nuget.pkg.github.com/tsharp/index.json   --api-key ${{ github.token }}

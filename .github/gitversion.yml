@@ -1,15 +1,8 @@
 # https://gitversion.net/docs/reference/configuration#branch-configuration
-mode: ContinuousDeployment
+mode: Mainline
 branches:
-  release:
-    regex: ^release?[/-]
-    tag: ""
   feature:
-    regex: ^feature?[/-]
-    tag: rc
-  pull-request:
-    tag: pr
-  main:
-    tag: rc
+    tag: beta
+  main: {}
 ignore:
   sha: []

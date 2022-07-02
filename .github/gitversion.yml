@@ -1,7 +1,7 @@
-mode: Mainline
+mode: ContinuousDeployment
 branches:
-  feature:
-    tag: beta
+  develop:
+    tag: rc
   main: {}
 ignore:
   sha: []

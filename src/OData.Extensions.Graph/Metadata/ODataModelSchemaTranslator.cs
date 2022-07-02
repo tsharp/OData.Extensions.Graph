@@ -24,6 +24,7 @@ namespace OData.Extensions.Graph.Metadata
             IRequestExecutorResolver executorResolver,
             NameString schemaName = default)
         {
+            
             this.schemaName = schemaName;
             this.executorResolver = executorResolver;
         }

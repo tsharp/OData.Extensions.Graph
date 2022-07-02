@@ -4,7 +4,7 @@ using Xunit;
 
 namespace OData.Extensions.Graph.Test
 {
-    public class UnitTest1
+    public class BasicUnitTests
     {
         //private static IEdmModel GetModel()
         //{
@@ -55,10 +55,10 @@ namespace OData.Extensions.Graph.Test
 
             var selections = new ISelectionNode[]
             {
-                new FieldNode(null, new NameNode("actor"), null, Array.Empty<DirectiveNode>(), Array.Empty<ArgumentNode>(), null),
-                new FieldNode(null, new NameNode("createdOn"), null, Array.Empty<DirectiveNode>(), Array.Empty<ArgumentNode>(), null),
-                new FieldNode(null, new NameNode("createdBy"), null, Array.Empty<DirectiveNode>(), Array.Empty<ArgumentNode>(), null),
-                new FieldNode(null, new NameNode("things"), null, Array.Empty<DirectiveNode>(), Array.Empty<ArgumentNode>(), null)
+                new FieldNode(null, new NameNode("actor"), null, null, Array.Empty<DirectiveNode>(), Array.Empty<ArgumentNode>(), null),
+                new FieldNode(null, new NameNode("createdOn"), null, null, Array.Empty<DirectiveNode>(), Array.Empty<ArgumentNode>(), null),
+                new FieldNode(null, new NameNode("createdBy"), null, null, Array.Empty<DirectiveNode>(), Array.Empty<ArgumentNode>(), null),
+                new FieldNode(null, new NameNode("things"), null, null, Array.Empty<DirectiveNode>(), Array.Empty<ArgumentNode>(), null)
             };
 
             var selectionSet = new SelectionSetNode(selections);

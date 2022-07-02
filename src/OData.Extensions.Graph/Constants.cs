@@ -9,9 +9,10 @@ namespace OData.Extensions.Graph
         {
             public static readonly JsonSerializerOptions Options = new JsonSerializerOptions()
             {
+                MaxDepth = 15,
                 PropertyNameCaseInsensitive = true,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                IgnoreNullValues = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
                 WriteIndented = true,
                 Converters =

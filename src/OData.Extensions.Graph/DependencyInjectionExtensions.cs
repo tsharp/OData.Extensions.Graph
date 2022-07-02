@@ -1,10 +1,10 @@
-﻿namespace Microsoft.AspNetCore.Builder
+﻿namespace OData.Extensions.Graph
 {
-    using global::OData.Extensions.Graph;
-    using global::OData.Extensions.Graph.Metadata;
+    using OData.Extensions.Graph.Metadata;
     using HotChocolate;
     using HotChocolate.AspNetCore.Serialization;
     using HotChocolate.Execution.Configuration;
+    using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Routing;
     using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +12,8 @@
     using System.Linq;
     using System.Text;
     using static Microsoft.AspNetCore.Routing.Patterns.RoutePatternFactory;
+    using System.Threading.Tasks;
+    using HotChocolate.Execution;
 
     public static class DependencyInjectionExtensions
     {
@@ -22,15 +24,18 @@
                 .Any();
         }
 
-        public static IRequestExecutorBuilder AddODataForGraphQL(this IServiceCollection services)
+        public static IRequestExecutorBuilder AddODataForGraphQL(this IServiceCollection services, NameString schemaName = default)
         {
             // Make sure memory caching is enabled / available to use for DI/IoC.
             services.AddMemoryCache();
 
             return services
                 .AddHttpResultSerializer(HttpResultSerialization.JsonArray)
-                .AddSingleton<IEdmModelProvider, ODataModelSchemaTranslator>()
-                .AddGraphQLServer();
+                .AddSingleton<IEdmModelProvider, ODataModelSchemaTranslator>(services =>
+                {
+                    return new ODataModelSchemaTranslator(services.GetRequiredService<IRequestExecutorResolver>(), schemaName);
+                })
+                .AddGraphQLServer(schemaName);
         }
 
         // https://github.com/ChilliCream/hotchocolate/blob/ee5813646fdfea81035c681989793514f33b5d94/src/HotChocolate/AspNetCore/src/AspNetCore/Extensions/HotChocolateAspNetCoreServiceCollectionExtensions.Http.cs
@@ -38,7 +43,7 @@
             this IEndpointRouteBuilder endpointRouteBuilder,
             string path = "/api",
             NameString schemaName = default)
-            => MapODataForGraphQL(endpointRouteBuilder, new PathString(path), schemaName);
+            => endpointRouteBuilder.MapODataForGraphQL(new PathString(path), schemaName);
 
         public static IEndpointConventionBuilder MapODataForGraphQL(
             this IEndpointRouteBuilder endpointRouteBuilder,
@@ -58,7 +63,7 @@
             requestPipeline
                 .UseMiddleware<GraphMetadataMiddleware>(schemaNameOrDefault)
                 .UseMiddleware<GraphDataMiddleware>(schemaNameOrDefault)
-                .Use(async (context, next) =>
+                .Use(async Task (HttpContext context, Func<Task> next) =>
                 {
                     context.Response.StatusCode = 400;
                     context.Response.ContentType = "application/json";

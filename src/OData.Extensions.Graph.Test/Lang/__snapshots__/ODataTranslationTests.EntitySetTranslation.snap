@@ -1,0 +1,56 @@
+﻿{
+  "DocumentNode": {
+    "Kind": "Document",
+    "Location": null,
+    "Definitions": [
+      {
+        "Kind": "OperationDefinition",
+        "Location": null,
+        "Name": null,
+        "Operation": "Query",
+        "VariableDefinitions": [],
+        "Directives": [],
+        "SelectionSet": {
+          "Kind": "SelectionSet",
+          "Location": null,
+          "Selections": [
+            {
+              "Kind": "Field",
+              "Alias": null,
+              "Arguments": [],
+              "Required": null,
+              "SelectionSet": {
+                "Kind": "SelectionSet",
+                "Location": null,
+                "Selections": [
+                  {
+                    "Kind": "Field",
+                    "Alias": null,
+                    "Arguments": [],
+                    "Required": null,
+                    "SelectionSet": null,
+                    "Location": null,
+                    "Name": {
+                      "Kind": "Name",
+                      "Location": null,
+                      "Value": "Id"
+                    },
+                    "Directives": []
+                  }
+                ]
+              },
+              "Location": null,
+              "Name": {
+                "Kind": "Name",
+                "Location": null,
+                "Value": "user"
+              },
+              "Directives": []
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "PathSegment": "user"
+}

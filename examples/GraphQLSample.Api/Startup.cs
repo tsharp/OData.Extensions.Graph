@@ -14,6 +14,7 @@ using Microsoft.Identity.Web.UI;
 using Microsoft.OpenApi.Models;
 using HotChocolate.Stitching;
 using System;
+using OData.Extensions.Graph;
 
 namespace GraphQLSample.Api
 {
@@ -64,7 +65,7 @@ namespace GraphQLSample.Api
             });
 
             services
-                .AddODataForGraphQL()
+                .AddODataForGraphQL("ODataGraph")
                 .AddAuthorization()
                 .AddInMemorySubscriptions()
                 .AddRemoteSchema("jobs")
@@ -149,7 +150,7 @@ namespace GraphQLSample.Api
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapODataForGraphQL();
+                endpoints.MapODataForGraphQL(schemaName: "ODataGraph");
                 endpoints.MapGraphQL();
                 endpoints.MapRazorPages();
                 endpoints.MapControllers();

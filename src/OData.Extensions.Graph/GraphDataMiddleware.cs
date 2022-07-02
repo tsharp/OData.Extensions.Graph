@@ -6,6 +6,7 @@ using HotChocolate.Execution.Processing;
 using HotChocolate.Language;
 using Microsoft.AspNetCore.Http;
 using Microsoft.OData.UriParser;
+using OData.Extensions.Graph.Lang;
 using OData.Extensions.Graph.Metadata;
 using System;
 using System.Collections.Generic;
@@ -36,7 +37,7 @@ namespace OData.Extensions.Graph
             var path = Regex.Replace(context.Request.Path.ToString(), @"^(\/api\/)", "");
 
             var model = await modelProvider.GetModelAsync(context.Request);
-
+            
             ODataUriParser parser = new ODataUriParser(model,
                 new Uri($"{context.Request.Scheme}://{context.Request.Host.ToUriComponent()}/api"),
                 new Uri($"{path}{context.Request.QueryString}", UriKind.Relative));

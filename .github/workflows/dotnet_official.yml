@@ -1,16 +1,10 @@
-name: .NET
+name: Official Build
 
 on:
   push:
     branches:
       - main
       - release/*
-      - feature/*
-  pull_request:
-    branches:
-      - main
-      - release/*
-      - feature/*
 
 jobs:
   build:

@@ -1,4 +1,5 @@
 # https://gitversion.net/docs/reference/configuration#branch-configuration
+next-version: 0.2
 mode: Mainline
 branches:
   feature:

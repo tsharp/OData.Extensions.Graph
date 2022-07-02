@@ -1,9 +1,6 @@
 name: Pull Request Build
 
 on:
-  push:
-    branches:
-      - feature/*
   pull_request:
     branches:
       - main

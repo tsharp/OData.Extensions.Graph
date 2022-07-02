@@ -1,7 +1,11 @@
+# https://gitversion.net/docs/reference/configuration#branch-configuration
 mode: ContinuousDeployment
 branches:
-  develop:
+  feature:
     tag: rc
-  main: {}
+  pull-request:
+    tag: pr
+  main:
+    tag: rc
 ignore:
   sha: []

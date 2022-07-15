@@ -1,6 +1,4 @@
 ﻿using HotChocolate.Language;
-using Microsoft.OData;
-using System.Collections.Generic;
 
 namespace OData.Extensions.Graph.Lang
 {

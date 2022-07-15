@@ -1,0 +1,7 @@
+﻿{
+  user(where: { Id: { neq: "1234" } }) {
+    items {
+      Id
+    }
+  }
+}

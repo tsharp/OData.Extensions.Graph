@@ -1,7 +1,6 @@
 ﻿using HotChocolate.Language;
 using Microsoft.OData.Edm;
 using Microsoft.OData.UriParser;
-using Microsoft.OData.UriParser.Validation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,17 +33,19 @@ namespace OData.Extensions.Graph.Lang
             query.PathSegment = pathSegment;
 
             IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
-                        
 
             // Handle select
             var selectClause = parser.ParseSelectAndExpand(); //parse $select, $expand
+            var filterClause = parser.ParseFilter();
+            var skip = parser.ParseSkip();
+            var top = parser.ParseTop();
 
             if (selectClause == null || !selectClause.SelectedItems.Any())
             {
                 throw new Microsoft.OData.ODataException("You must specify the $select or $expand clause with your request. One of these options must not be empty.");
             }
 
-            var selectionSetNode = BuildFromSelectExpandClause(entitySet, selectClause);
+            var selectionSetNode = BuildFromSelectExpandClause(entitySet, filterClause != null, selectClause);
 
             var arguments = new List<ArgumentNode>();
             arguments.AddRange(ODataUtility.GetKeyArguments(path));
@@ -66,6 +67,13 @@ namespace OData.Extensions.Graph.Lang
                 }
 
                 arguments.Add(new ArgumentNode(param.Key, param.Value));
+            }
+
+            if (filterClause != null)
+            {
+                var visitor = new GraphQueryNodeVisitor();
+                var filterArguments = filterClause.Expression.Accept(visitor) as ObjectValueNode;
+                arguments.Add(new ArgumentNode("where", filterArguments));
             }
 
             var querySelectionSet = new SelectionSetNode(new ISelectionNode[] {
@@ -91,7 +99,7 @@ namespace OData.Extensions.Graph.Lang
             return query;
         }
 
-        private SelectionSetNode BuildFromSelectExpandClause(IEdmEntitySet entitySet, SelectExpandClause selectionClause)
+        private SelectionSetNode BuildFromSelectExpandClause(IEdmEntitySet entitySet, bool isFilterable, SelectExpandClause selectionClause)
         {
             var selections = new List<ISelectionNode>();
 
@@ -108,12 +116,12 @@ namespace OData.Extensions.Graph.Lang
                         if (edmProperty.PropertyKind == EdmPropertyKind.Structural)
                         {
                             var fieldNode = new FieldNode(
-                                null, 
-                                new NameNode(selectionName),
-                                null, 
                                 null,
-                                Array.Empty<DirectiveNode>(), 
-                                Array.Empty<ArgumentNode>(), 
+                                new NameNode(selectionName),
+                                null,
+                                null,
+                                Array.Empty<DirectiveNode>(),
+                                Array.Empty<ArgumentNode>(),
                                 null);
                             selections.Add(fieldNode);
                         }
@@ -125,9 +133,24 @@ namespace OData.Extensions.Graph.Lang
                 }
             }
 
-            var selectionSet = new SelectionSetNode(selections);
+            if (isFilterable)
+            {
+                var itemsSelections = new List<ISelectionNode>()
+                {
+                    new FieldNode(
+                        null,
+                        new NameNode("items"),
+                        null,
+                        null,
+                        Array.Empty<DirectiveNode>(),
+                        Array.Empty<ArgumentNode>(),
+                        new SelectionSetNode(selections))
+                };
 
-            return selectionSet;
+                return new SelectionSetNode(itemsSelections);
+            }
+
+            return new SelectionSetNode(selections);
         }
 
         private IEnumerable<ODataSelectPath> ParseSelectedPathsFromClause(SelectExpandClause clause)

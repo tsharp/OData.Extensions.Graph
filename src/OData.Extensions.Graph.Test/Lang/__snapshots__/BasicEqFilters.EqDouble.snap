@@ -1,0 +1,7 @@
+﻿{
+  user(where: { Longitude: { eq: 1 } }) {
+    items {
+      Id
+    }
+  }
+}

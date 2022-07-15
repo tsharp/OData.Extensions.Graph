@@ -82,11 +82,6 @@ namespace GraphQLSample.Api
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "TestGraphQLApi v1"));
-                app.UsePlayground(new PlaygroundOptions
-                {
-                    QueryPath = "/graphql",
-                    Path = "/playground"
-                });
             }
 
             // app.UseHttpsRedirection();

@@ -3,6 +3,7 @@ using HotChocolate.AspNetCore;
 using HotChocolate.AspNetCore.Serialization;
 using HotChocolate.Execution;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.OData.Edm.Csdl;
 using Microsoft.OData.Edm.Validation;
@@ -10,6 +11,7 @@ using OData.Extensions.Graph.Metadata;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -19,6 +21,7 @@ namespace OData.Extensions.Graph
     {
         private readonly IEdmModelProvider modelProvider;
         private readonly IMemoryCache memoryCache;
+        private readonly PathString metadataBase;
 
         public GraphMetadataMiddleware(
             Microsoft.AspNetCore.Http.RequestDelegate next,
@@ -26,25 +29,29 @@ namespace OData.Extensions.Graph
             IEdmModelProvider modelProvider,
             IRequestExecutorResolver executorResolver,
             IHttpResultSerializer resultSerializer,
+            string routeBase,
             NameString schemaName)
             : base(next, executorResolver, resultSerializer, schemaName)
         {
             this.memoryCache = memoryCache;
             this.modelProvider = modelProvider;
+
+            metadataBase = new PathString($"{routeBase}/$metadata");
         }
 
         public async Task InvokeAsync(HttpContext context)
         {
             await Task.CompletedTask;
+            PathString subPaths = new PathString();
 
             bool handle =
                 HttpMethods.IsGet(context.Request.Method) &&
                 context.Request.Path.HasValue &&
-                context.Request.Path.Value.EndsWith("/$metadata", StringComparison.InvariantCultureIgnoreCase);
+                context.Request.Path.StartsWithSegments(metadataBase, StringComparison.InvariantCultureIgnoreCase, out subPaths);
 
             if (handle)
             {
-                await HandleRequestAsync(context);
+                await HandleRequestAsync(context, subPaths);
             }
             else
             {
@@ -111,21 +118,20 @@ namespace OData.Extensions.Graph
         }
 
         // TODO: Convert GraphQL Schema to IEdmModel Schema for OData Emit
-        private async Task HandleRequestAsync(HttpContext context)
+        private async Task HandleRequestAsync(HttpContext context, PathString subString)
         {
             // Proof that we can call an embedded server ...
             var schema = (await GetExecutorAsync(context.RequestAborted)).Schema;
 
-            //EdmEntityType customer = new EdmEntityType("NS", "Customer");
-            //customer.AddKeys(customer.AddStructuralProperty("ID", EdmPrimitiveTypeKind.Int32));
-            //customer.AddStructuralProperty("Name", EdmPrimitiveTypeKind.String);
-            //EdmStructuralProperty ssn = customer.AddStructuralProperty("SSN", EdmPrimitiveTypeKind.String);
+            if (subString.StartsWithSegments(new PathString("/graph")))
+            {
+                context.Response.StatusCode = 200;
+                context.Response.ContentType = "application/text";
+                await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(schema.ToString()));
+                await context.Response.BodyWriter.FlushAsync();
 
-            //EdmModel model = new EdmModel(true);
-            //model.AddElement(customer);
-            //EdmTerm stringTerm = new EdmTerm("DefaultNamespace", "StringTerm", EdmCoreModel.Instance.GetString(true));
-            //model.AddElement(stringTerm);
-
+                return;
+            }
 
             context.Response.StatusCode = 200;
             context.Response.ContentType = "application/xml";

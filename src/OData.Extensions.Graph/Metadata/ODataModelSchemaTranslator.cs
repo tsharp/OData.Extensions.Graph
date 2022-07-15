@@ -301,7 +301,7 @@ namespace OData.Extensions.Graph.Metadata
 
                 if (TryGetCollectionType(returnType, out Type entityType))
                 {
-                    BindEntitySet(builder, entityType, methodInfo.Name);
+                    BindEntitySet(builder, entityType, objectType.Name);
                     continue;
                 }
 

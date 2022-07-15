@@ -1,7 +1,5 @@
 using GraphQLSample.Api.Core;
 using GraphQLSample.Api.Dto;
-using HotChocolate.AspNetCore;
-using HotChocolate.AspNetCore.Playground;
 using HotChocolate.Types;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
@@ -12,8 +10,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using Microsoft.OpenApi.Models;
-using HotChocolate.Stitching;
-using System;
 using OData.Extensions.Graph;
 
 namespace GraphQLSample.Api
@@ -54,28 +50,16 @@ namespace GraphQLSample.Api
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "TestGraphQLApi", Version = "v1" });
             });
 
-            services.AddHttpClient("users", (sp, client) =>
-            {
-                client.BaseAddress = new Uri("https://rusty.azurewebsites.net/graphql");
-            });
-
-            services.AddHttpClient("jobs", (sp, client) =>
-            {
-                client.BaseAddress = new Uri("https://api.graphql.jobs");
-            });
-
             services
                 .AddODataForGraphQL("ODataGraph")
                 .AddAuthorization()
                 .AddInMemorySubscriptions()
-                .AddRemoteSchema("jobs")
-                .AddRemoteSchema("users");
-                // .AddType<ObjectType<User>>()
-                //.AddType<ObjectType<Class>>()
-                //.AddType<ObjectType<Conference>>()
-                // .AddSubscriptionType<SubscriptionObjectType>()
-                // .AddMutationType<MutationObjectType>()
-                // .AddQueryType<QueryObjectType>();
+                .AddType<ObjectType<User>>()
+                .AddType<ObjectType<Class>>()
+                .AddType<ObjectType<Conference>>()
+                //.AddSubscriptionType<SubscriptionObjectType>()
+                //.AddMutationType<MutationObjectType>()
+                .AddTypeExtension<QueryObjectType>();
 
             services.AddCors(options =>
             {
@@ -150,8 +134,7 @@ namespace GraphQLSample.Api
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapODataForGraphQL(schemaName: "ODataGraph");
-                endpoints.MapGraphQL();
+                endpoints.MapODataForGraphQL(schemaName: "ODataGraph", enableGraphEndpoint: true);
                 endpoints.MapRazorPages();
                 endpoints.MapControllers();
             });

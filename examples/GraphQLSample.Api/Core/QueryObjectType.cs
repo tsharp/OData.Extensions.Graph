@@ -1,12 +1,16 @@
 using GraphQLSample.Api.Dto;
+using HotChocolate.AspNetCore.Authorization;
+using HotChocolate.Types;
 using System;
 using System.Linq;
 
 namespace GraphQLSample.Api.Core
 {
+    [ObjectType("Query")]
     public class QueryObjectType
     {
-        public IQueryable<User> users()
+        [Authorize(Roles = new[] { "X" })]
+        public IQueryable<User> Users()
         {
             return (new User[] {
                 new User()

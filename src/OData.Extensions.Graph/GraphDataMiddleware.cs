@@ -5,6 +5,7 @@ using HotChocolate.Execution;
 using HotChocolate.Execution.Processing;
 using HotChocolate.Language;
 using Microsoft.AspNetCore.Http;
+using Microsoft.OData;
 using Microsoft.OData.UriParser;
 using OData.Extensions.Graph.Lang;
 using OData.Extensions.Graph.Metadata;
@@ -37,7 +38,7 @@ namespace OData.Extensions.Graph
             var path = Regex.Replace(context.Request.Path.ToString(), @"^(\/api\/)", "");
 
             var model = await modelProvider.GetModelAsync(context.Request);
-            
+
             ODataUriParser parser = new ODataUriParser(model,
                 new Uri($"{context.Request.Scheme}://{context.Request.Host.ToUriComponent()}/api"),
                 new Uri($"{path}{context.Request.QueryString}", UriKind.Relative));
@@ -71,23 +72,65 @@ namespace OData.Extensions.Graph
 
         private async Task<bool> HandleRequestAsync(HttpContext context, ODataUriParser parser, QueryTranslator qt)
         {
-            await Task.CompletedTask;
-
             // Do Conversion Stuff ...
+            try
+            {
+                var translatedQuery = qt.Translate(parser);
+                var result = await ExecuteGraphQuery(context, translatedQuery.PathSegment, translatedQuery.DocumentNode);
+                await SendResponseObjectAsync(context, result);
 
-            var translatedQuery = qt.Translate(parser);
-            var result = await ExecuteGraphQuery(context, translatedQuery.PathSegment, translatedQuery.DocumentNode);
+            }
+            catch (ODataException ex)
+            {
+                var result = new Dictionary<string, object>()
+                {
+                    ["@odata.context"] = "https://api.msrc.microsoft.com/sug/v2.0/en-US/$metadata#Edm.String",
+                    ["@odata.next"] = null,
+                    ["@odata.count"] = null,
+                    ["errors"] = new object[]
+                        {
+                            new {
+                                message = ex.Message,
+                                type = "ODataError"
+                            }
+                        }
+                };
 
+                await SendResponseObjectAsync(context, result, StatusCodes.Status500InternalServerError);
+            }
+            catch (Exception ex)
+            {
+                var result = new Dictionary<string, object>()
+                {
+                    ["@odata.context"] = "https://api.msrc.microsoft.com/sug/v2.0/en-US/$metadata#Edm.String",
+                    ["@odata.next"] = null,
+                    ["@odata.count"] = null,
+                    ["errors"] = new object[]
+                        {
+                            new {
+                                message = ex.Message,
+                                type = "InternalError"
+                            }
+                        }
+                };
+
+                await SendResponseObjectAsync(context, result, StatusCodes.Status500InternalServerError);
+            }
+
+
+            return true;
+        }
+
+        private async Task SendResponseObjectAsync(HttpContext context, object data, int statusCode = 200)
+        {
             context.Response.ContentType = "application/json";
-
+            context.Response.StatusCode = statusCode;
             await JsonSerializer.SerializeAsync(
                 context.Response.Body,
-                result,
+                data,
                 typeof(object),
                 Constants.Serialization.Options,
                 context.RequestAborted);
-
-            return true;
         }
 
         private Task<object> ExecuteGraphQuery(HttpContext context, string entitySet, string query)
@@ -97,7 +140,12 @@ namespace OData.Extensions.Graph
 
         private async Task<object> ExecuteGraphQuery(HttpContext context, string entitySet, DocumentNode document)
         {
-            var response = new Dictionary<string, object>();
+            var response = new Dictionary<string, object>()
+            {
+                ["@odata.context"] = null,
+                ["@odata.next"] = null,
+                ["@odata.count"] = null,
+            };
 
             try
             {
@@ -110,10 +158,29 @@ namespace OData.Extensions.Graph
 
                 if (result.Errors?.Any() == true)
                 {
-                    var errors = result.Errors.Select(e => e.ToString()).ToArray();
+                    var errors = result.Errors.Select(e => new {
+                        message = e.Message ?? e.ToString(),
+                        type = "GraphError",
+                        code = e.Code
+                    }).ToArray();
+
                     response.Add("errors", errors);
-                    context.Response.StatusCode = 400;
+                    context.Response.StatusCode = 500;
+
+                    if (response.Any(e => e.Key == ErrorCodes.Authentication.NotAuthenticated))
+                    {
+                        context.Response.StatusCode = 401;
+                        return response;
+                    }
+
+                    if (response.Any(e => e.Key == ErrorCodes.Authentication.NotAuthorized))
+                    {
+                        context.Response.StatusCode = 403;
+                        return response;
+                    }
+
                     return response;
+
                 }
 
                 var queryResult = result as QueryResult;

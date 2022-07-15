@@ -14,6 +14,7 @@
     using static Microsoft.AspNetCore.Routing.Patterns.RoutePatternFactory;
     using System.Threading.Tasks;
     using HotChocolate.Execution;
+    using HotChocolate.AspNetCore;
 
     public static class DependencyInjectionExtensions
     {
@@ -41,13 +42,17 @@
         // https://github.com/ChilliCream/hotchocolate/blob/ee5813646fdfea81035c681989793514f33b5d94/src/HotChocolate/AspNetCore/src/AspNetCore/Extensions/HotChocolateAspNetCoreServiceCollectionExtensions.Http.cs
         public static IEndpointConventionBuilder MapODataForGraphQL(
             this IEndpointRouteBuilder endpointRouteBuilder,
-            string path = "/api",
+            string odataPath = "/api",
+            string graphPath = "/graphql",
+            bool enableGraphEndpoint = false,
             NameString schemaName = default)
-            => endpointRouteBuilder.MapODataForGraphQL(new PathString(path), schemaName);
+            => endpointRouteBuilder.MapODataForGraphQL(new PathString(odataPath), new PathString(graphPath), enableGraphEndpoint, schemaName);
 
         public static IEndpointConventionBuilder MapODataForGraphQL(
             this IEndpointRouteBuilder endpointRouteBuilder,
-            PathString path,
+            PathString odataPath,
+            PathString graphPath,
+            bool enableGraphEndpoint,
             NameString schemaName = default)
         {
             if (endpointRouteBuilder is null)
@@ -55,13 +60,13 @@
                 throw new ArgumentNullException(nameof(endpointRouteBuilder));
             }
 
-            var pattern = Parse(path.ToString().TrimEnd('/') + "/{**slug}");
+            var pattern = Parse(odataPath.ToString().TrimEnd('/') + "/{**slug}");
 
             IApplicationBuilder requestPipeline = endpointRouteBuilder.CreateApplicationBuilder();
             var schemaNameOrDefault = schemaName.HasValue ? schemaName : Schema.DefaultName;
 
             requestPipeline
-                .UseMiddleware<GraphMetadataMiddleware>(schemaNameOrDefault)
+                .UseMiddleware<GraphMetadataMiddleware>(odataPath.ToString().TrimEnd('/'), schemaNameOrDefault)
                 .UseMiddleware<GraphDataMiddleware>(schemaNameOrDefault)
                 .Use(async Task (HttpContext context, Func<Task> next) =>
                 {
@@ -71,6 +76,21 @@
                     await context.Response.Body.WriteAsync(content, 0, content.Length);
                     await context.Response.Body.FlushAsync();
                 });
+
+            if (enableGraphEndpoint)
+            {
+                endpointRouteBuilder
+                    .MapGraphQL(schemaName: schemaName, path: graphPath)
+                    .WithOptions(new GraphQLServerOptions()
+                    {
+                        EnableGetRequests = false,
+                        EnableSchemaRequests = true,
+                        EnableMultipartRequests = true,
+                        Tool = {
+                            Enable = false
+                        }
+                    });
+            }
 
             return new GraphEndpointConventionBuilder(
                 endpointRouteBuilder

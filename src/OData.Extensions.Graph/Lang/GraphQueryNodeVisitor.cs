@@ -2,6 +2,7 @@
 using HotChocolate.Language;
 using System;
 using System.Collections.Generic;
+using Microsoft.OData;
 
 namespace OData.Extensions.Graph.Lang
 {
@@ -69,6 +70,13 @@ namespace OData.Extensions.Graph.Lang
             if (nodeIn.Value is int)
             {
                 return new ObjectFieldNode(currentOp.Pop(), (int)nodeIn.Value);
+            }
+
+            if (nodeIn.Value is ODataEnumValue)
+            {
+                var value = (nodeIn.Value as ODataEnumValue).Value.ToUpper().Replace(" ", "_");
+
+                return new ObjectFieldNode(currentOp.Pop(), new EnumValueNode(value));
             }
 
             throw new InvalidOperationException($"Unsupported $filter Data Type: {nodeIn.Value?.GetType()} - {nodeIn.Value}");

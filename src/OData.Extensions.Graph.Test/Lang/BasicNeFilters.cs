@@ -7,6 +7,19 @@ namespace OData.Extensions.Graph.Test.Lang
     public class BasicNeFilters
     {
         [Fact]
+        public static void NeEnum()
+        {
+            // Arrange
+            var translator = new QueryTranslator(Common.GetEdmModel());
+
+            // Act
+            var filerByUserId = translator.Translate("/user?$select=Status&$filter=Status ne 'Undefined'");
+
+            // Assert
+            filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
+        }
+
+        [Fact]
         public static void NeString()
         {
             // Arrange

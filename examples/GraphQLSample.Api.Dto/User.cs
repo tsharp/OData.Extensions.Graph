@@ -1,5 +1,11 @@
 ﻿namespace GraphQLSample.Api.Dto
 {
+    public enum StatusCode
+    {
+        Undefined,
+        Registered
+    }
+
     public class User : Entity
     {
         public string Name { get; set; }
@@ -9,5 +15,6 @@
         public bool IsActive { get; set; }
         public string EmailAddress { get; set; }
         public Conference[] Conferences { get; set; }
+        public StatusCode Status { get; set; }
     }
 }

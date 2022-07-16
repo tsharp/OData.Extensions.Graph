@@ -10,7 +10,7 @@ namespace GraphQLSample.Api.Core
     [ObjectType("Query")]
     public class QueryObjectType
     {
-        [UseOffsetPaging]
+        [UseOffsetPaging(IncludeTotalCount = true, MaxPageSize = 100, DefaultPageSize = 20)]
         [UseFiltering]
         public IQueryable<User> GetUsers()
         {

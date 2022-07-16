@@ -1,9 +1,6 @@
 ﻿using HotChocolate.Language;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OData.Extensions.Graph.Lang
 {
@@ -12,7 +9,7 @@ namespace OData.Extensions.Graph.Lang
         private readonly string name;
         private readonly StructuredNameNode parent;
 
-        public StructuredNameNode(string name, StructuredNameNode parent)
+        public StructuredNameNode(string name, StructuredNameNode parent = null)
         {
             this.parent = parent;
             this.name = name;
@@ -29,7 +26,7 @@ namespace OData.Extensions.Graph.Lang
 
         public string ToString(bool indented)
         {
-            if(parent != null)
+            if (parent != null)
             {
                 return $"{parent.ToString()}.{name}";
             }
@@ -37,16 +34,16 @@ namespace OData.Extensions.Graph.Lang
             return name;
         }
 
-        public ObjectValueNode WrapNode(ObjectValueNode field)
+        public ObjectFieldNode WrapNode(ObjectValueNode value)
         {
-            var value = new ObjectValueNode(new ObjectFieldNode(name, field));
+            var field = new ObjectFieldNode(name, value);
 
-            if(parent == null)
+            if (parent == null)
             {
-                return value;
+                return field;
             }
 
-            return parent.WrapNode(value);
+            return parent.WrapNode(new ObjectValueNode(field));
         }
     }
 }

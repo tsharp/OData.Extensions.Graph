@@ -1,0 +1,7 @@
+﻿{
+  user(where: { or: { Id: { neq: "Milk" }, and: { Id: { neq: "Sour" }, or: { Id: { eq: "bob" }, CreatedOn: { lt: "2022-01-05" } } } } }) {
+    items {
+      Id
+    }
+  }
+}

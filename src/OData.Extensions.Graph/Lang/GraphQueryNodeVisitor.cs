@@ -1,33 +1,45 @@
-﻿using Microsoft.OData.UriParser;
-using HotChocolate.Language;
+﻿using HotChocolate.Language;
+using Microsoft.OData;
+using Microsoft.OData.UriParser;
 using System;
 using System.Collections.Generic;
-using Microsoft.OData;
 using System.Linq;
 
 namespace OData.Extensions.Graph.Lang
 {
     public class GraphQueryNodeVisitor : QueryNodeVisitor<ISyntaxNode>
     {
-        #region Catch Alls
-        public override ISyntaxNode Visit(AllNode nodeIn)
+        private static IReadOnlyDictionary<string, string> functionMap = new Dictionary<string, string>()
         {
-            return base.Visit(nodeIn);
-        }
-
-        public override ISyntaxNode Visit(AnyNode nodeIn)
-        {
-            return base.Visit(nodeIn);
-        }
-        #endregion
+            ["contains"] = "contains",
+            ["ncontains"] = "ncontains",
+            ["startswith"] = "startsWith",
+            ["nstartswith"] = "nstartsWith",
+            ["endswith"] = "endsWith",
+            ["nendswith"] = "nendsWith"
+        };
 
         #region Entry
         public override ISyntaxNode Visit(BinaryOperatorNode nodeIn)
         {
             string binaryOp = string.Empty;
-
-            switch(nodeIn.OperatorKind)
+            bool isNestedBinaryOp = false;
+            switch (nodeIn.OperatorKind)
             {
+                case BinaryOperatorKind.Equal:
+                    binaryOp = "eq";
+                    break;
+                case BinaryOperatorKind.NotEqual:
+                    binaryOp = "neq";
+                    break;
+                case BinaryOperatorKind.And:
+                    isNestedBinaryOp = true;
+                    binaryOp = "and";
+                    break;
+                case BinaryOperatorKind.Or:
+                    isNestedBinaryOp = true;
+                    binaryOp = "or";
+                    break;
                 case BinaryOperatorKind.GreaterThan:
                     binaryOp = "gt";
                     break;
@@ -40,12 +52,6 @@ namespace OData.Extensions.Graph.Lang
                 case BinaryOperatorKind.LessThanOrEqual:
                     binaryOp = "lte";
                     break;
-                case BinaryOperatorKind.NotEqual:
-                    binaryOp = "neq";
-                    break;
-                case BinaryOperatorKind.Equal:
-                    binaryOp = "eq";
-                    break;
                 case BinaryOperatorKind.Has:
                 // Only Valid to Compare Enum Flags, Currently Unsupported
                 default:
@@ -55,17 +61,25 @@ namespace OData.Extensions.Graph.Lang
             var left = nodeIn.Left.Accept(this);
             var right = nodeIn.Right.Accept(this);
 
-            var leftValue = left as IValueNode;
-            var rightValue = right as IValueNode;
+            if (!isNestedBinaryOp)
+            {
+                var leftValue = left as IValueNode;
+                var rightValue = right as IValueNode;
 
-            var leftName = left as StructuredNameNode;
-            var rightName = right as StructuredNameNode;
+                var leftName = left as StructuredNameNode;
+                var rightName = right as StructuredNameNode;
 
-            var filter = new ObjectFieldNode(binaryOp, rightValue ?? leftValue);
-            var value = new ObjectValueNode(filter);
+                var filter = new ObjectFieldNode(binaryOp, rightValue ?? leftValue);
+                var value = new ObjectValueNode(filter);
 
-            return (leftName ?? rightName).WrapNode(value);
+                return (leftName ?? rightName).WrapNode(value);
+            }
 
+            var leftField = left as ObjectFieldNode;
+            var rightField = right as ObjectFieldNode;
+
+            var complexValue = new ObjectValueNode(leftField, rightField);
+            return new StructuredNameNode(binaryOp).WrapNode(complexValue);
         }
         #endregion
 
@@ -97,8 +111,8 @@ namespace OData.Extensions.Graph.Lang
                 return new IntValueNode((int)nodeIn.Value);
             }
 
-            if (nodeIn.Value is DateTime || 
-                nodeIn.Value is DateTimeOffset || 
+            if (nodeIn.Value is DateTime ||
+                nodeIn.Value is DateTimeOffset ||
                 nodeIn.Value is Microsoft.OData.Edm.Date)
             {
                 return new StringValueNode(nodeIn.Value.ToString());
@@ -108,20 +122,10 @@ namespace OData.Extensions.Graph.Lang
             {
                 var value = (nodeIn.Value as ODataEnumValue).Value.ToUpper().Replace(" ", "_");
 
-                return  new EnumValueNode(value);
+                return new EnumValueNode(value);
             }
 
             throw new InvalidOperationException($"Unsupported $filter Data Type: {nodeIn.Value?.GetType()} - {nodeIn.Value}");
-        }
-
-        public override ISyntaxNode Visit(AggregatedCollectionPropertyNode nodeIn)
-        {
-            return base.Visit(nodeIn);
-        }
-
-        public override ISyntaxNode Visit(CollectionComplexNode nodeIn)
-        {
-            return base.Visit(nodeIn);
         }
 
         public override ISyntaxNode Visit(CollectionConstantNode nodeIn)
@@ -132,46 +136,6 @@ namespace OData.Extensions.Graph.Lang
                 .ToArray();
 
             return new ListValueNode(values);
-        }
-
-        public override ISyntaxNode Visit(CollectionFunctionCallNode nodeIn)
-        {
-            return base.Visit(nodeIn);
-        }
-
-        public override ISyntaxNode Visit(CollectionNavigationNode nodeIn)
-        {
-            return base.Visit(nodeIn);
-        }
-
-        public override ISyntaxNode Visit(CollectionOpenPropertyAccessNode nodeIn)
-        {
-            return base.Visit(nodeIn);
-        }
-
-        public override ISyntaxNode Visit(CollectionPropertyAccessNode nodeIn)
-        {
-            return base.Visit(nodeIn);
-        }
-
-        public override ISyntaxNode Visit(CollectionResourceCastNode nodeIn)
-        {
-            return base.Visit(nodeIn);
-        }
-
-        public override ISyntaxNode Visit(CollectionResourceFunctionCallNode nodeIn)
-        {
-            return base.Visit(nodeIn);
-        }
-
-        public override ISyntaxNode Visit(ConvertNode nodeIn)
-        {
-            return nodeIn.Source.Accept(this);
-        }
-
-        public override ISyntaxNode Visit(CountNode nodeIn)
-        {
-            return base.Visit(nodeIn);
         }
 
         public override ISyntaxNode Visit(InNode nodeIn)
@@ -191,36 +155,6 @@ namespace OData.Extensions.Graph.Lang
             return (leftName ?? rightName).WrapNode(value);
         }
 
-        public override ISyntaxNode Visit(NamedFunctionParameterNode nodeIn)
-        {
-            return base.Visit(nodeIn);
-        }
-
-        public override ISyntaxNode Visit(NonResourceRangeVariableReferenceNode nodeIn)
-        {
-            return base.Visit(nodeIn);
-        }
-
-        public override ISyntaxNode Visit(ParameterAliasNode nodeIn)
-        {
-            return base.Visit(nodeIn);
-        }
-
-        public override ISyntaxNode Visit(ResourceRangeVariableReferenceNode nodeIn)
-        {
-            return base.Visit(nodeIn);
-        }
-
-        public override ISyntaxNode Visit(SearchTermNode nodeIn)
-        {
-            return base.Visit(nodeIn);
-        }
-
-        public override ISyntaxNode Visit(SingleComplexNode nodeIn)
-        {
-            return base.Visit(nodeIn);
-        }
-
         public override ISyntaxNode Visit(SingleNavigationNode nodeIn)
         {
             StructuredNameNode parent = null;
@@ -233,28 +167,36 @@ namespace OData.Extensions.Graph.Lang
             return new StructuredNameNode(nodeIn.NavigationProperty.Name, parent as StructuredNameNode);
         }
 
-        public override ISyntaxNode Visit(SingleResourceCastNode nodeIn)
+        public override ISyntaxNode Visit(ConvertNode nodeIn)
         {
-            return base.Visit(nodeIn);
-        }
-
-        public override ISyntaxNode Visit(SingleResourceFunctionCallNode nodeIn)
-        {
-            return base.Visit(nodeIn);
-        }
-
-        public override ISyntaxNode Visit(SingleValueCastNode nodeIn)
-        {
-            return base.Visit(nodeIn);
+            return nodeIn.Source.Accept(this);
         }
 
         public override ISyntaxNode Visit(SingleValueFunctionCallNode nodeIn)
         {
-            return base.Visit(nodeIn);
-        }
+            var functionName = functionMap
+                .FirstOrDefault(m => m.Key.Equals(nodeIn.Name, StringComparison.InvariantCultureIgnoreCase));
 
-        public override ISyntaxNode Visit(SingleValueOpenPropertyAccessNode nodeIn)
-        {
+            if (string.IsNullOrWhiteSpace(functionName.Value))
+            {
+                throw new InvalidOperationException($"Unknown function call: `{nodeIn.Name}`");
+            }
+
+            var parameters = nodeIn.Parameters.Select(p => p.Accept(this)).ToArray();
+
+            var left = parameters[0] as StructuredNameNode;
+            var right = parameters[1] as IValueNode;
+
+            if (left == null || right == null)
+            {
+                throw new InvalidOperationException($"The first argument of `{nodeIn.Name}` must be a property.");
+            }
+
+            var filter = new ObjectFieldNode(functionName.Value, right);
+            var value = new ObjectValueNode(filter);
+
+            return left.WrapNode(value);
+
             return base.Visit(nodeIn);
         }
 
@@ -268,11 +210,6 @@ namespace OData.Extensions.Graph.Lang
             }
 
             return new StructuredNameNode(nodeIn.Property.Name, parent);
-        }
-
-        public override ISyntaxNode Visit(UnaryOperatorNode nodeIn)
-        {
-            return base.Visit(nodeIn);
         }
         #endregion
     }

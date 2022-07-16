@@ -21,6 +21,9 @@ namespace OData.Extensions.Graph.Test
             var user = builder.EntitySet<User>("user");
             user.EntityType.DerivesFrom<Entity>();
 
+            var conf = builder.EntitySet<Conference>("conferences");
+            conf.EntityType.DerivesFrom<Entity>();
+
             return builder.GetEdmModel();
         }
     }

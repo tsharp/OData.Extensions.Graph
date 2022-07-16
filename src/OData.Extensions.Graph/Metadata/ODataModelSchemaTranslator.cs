@@ -5,11 +5,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,12 +17,14 @@ namespace OData.Extensions.Graph.Metadata
     {
         private readonly IRequestExecutorResolver executorResolver;
         private readonly NameString schemaName;
+        private readonly IBindingResolver bindingResolver;
 
         public ODataModelSchemaTranslator(
+            IBindingResolver bindingResolver,
             IRequestExecutorResolver executorResolver,
             NameString schemaName = default)
         {
-            
+            this.bindingResolver = bindingResolver;
             this.schemaName = schemaName;
             this.executorResolver = executorResolver;
         }
@@ -46,11 +46,6 @@ namespace OData.Extensions.Graph.Metadata
         public async Task<string> GetModelCacheIdAsync(HttpRequest request)
         {
             await Task.CompletedTask;
-            /*
-#if DEBUG
-            return default;
-#endif
-            */
 
             var baseSchemaName = schemaName.HasValue ? schemaName.Value : "default";
             var subType = request.HttpContext.User.Identity.IsAuthenticated ? "anonymous" : "authenticated";
@@ -97,82 +92,6 @@ namespace OData.Extensions.Graph.Metadata
                 }
             }
         }
-        private void BindEntitySet(ODataModelBuilder builder, Type baseType, string entitySet)
-        {
-            MethodInfo entitySetInfo = typeof(ODataModelBuilder)
-                .GetMethod("EntitySet", BindingFlags.Public | BindingFlags.Instance,
-                null, new Type[] { typeof(string) }, null);
-
-            entitySetInfo.MakeGenericMethod(baseType).Invoke(builder, new[] { entitySet });
-        }
-
-        private void BindEntityType(ODataModelBuilder builder, Type baseType)
-        {
-            MethodInfo entitySetInfo = typeof(ODataModelBuilder)
-                .GetMethod("EntityType", BindingFlags.Public | BindingFlags.Instance,
-                null, new Type[] { }, null);
-
-            entitySetInfo.MakeGenericMethod(baseType).Invoke(builder, null);
-        }
-
-        public bool TryGetCollectionType(Type type, out Type collectionType)
-        {
-            string[] collections = new[]
-            {
-                nameof(IEnumerable),
-                nameof(IOrderedQueryable),
-                nameof(IQueryable),
-                nameof(IList),
-                typeof(IEnumerable<>).Name,
-                typeof(IOrderedEnumerable<>).Name,
-                typeof(IQueryable<>).Name,
-                typeof(IOrderedQueryable<>).Name,
-                typeof(IList<>).Name
-            };
-
-            if (type.IsArray)
-            {
-                collectionType = type.GetElementType();
-                return true;
-            }
-
-            if (type.IsGenericType && type.GetInterfaces().Select(i => i.Name).Intersect(collections).Any())
-            {
-                collectionType = type.GenericTypeArguments[0];
-                return true;
-            }
-
-            collectionType = null;
-            return false;
-        }
-
-        public bool IsCollectionType(Type type)
-        {
-            string[] collections = new[]
-            {
-                nameof(IEnumerable),
-                nameof(IOrderedQueryable),
-                nameof(IQueryable),
-                nameof(IList),
-                typeof(IEnumerable<>).Name,
-                typeof(IOrderedEnumerable<>).Name,
-                typeof(IQueryable<>).Name,
-                typeof(IOrderedQueryable<>).Name,
-                typeof(IList<>).Name
-            };
-
-            if (type.IsArray)
-            {
-                return true;
-            }
-
-            if (type.IsGenericType && type.GetInterfaces().Select(i => i.Name).Intersect(collections).Any())
-            {
-                return true;
-            }
-
-            return false;
-        }
 
         private IEdmModel ParseDelegateSchema(ISchema schema)
         {
@@ -202,10 +121,11 @@ namespace OData.Extensions.Graph.Metadata
                     {
                         var primitive = resolved as IEdmPrimitiveType;
                         var property = entityType.AddStructuralProperty(field.Name.Value, primitive.PrimitiveKind);
-                        
-                        if( field.Name.Value.Equals("id", StringComparison.OrdinalIgnoreCase) ||
+
+                        if (field.Name.Value.Equals("id", StringComparison.OrdinalIgnoreCase) ||
                             field.Name.Value.Equals($"{objectType.Name.Value}id", StringComparison.OrdinalIgnoreCase) ||
-                            field.Name.Value.Equals($"{objectType.Name.Value}_id", StringComparison.OrdinalIgnoreCase)) {
+                            field.Name.Value.Equals($"{objectType.Name.Value}_id", StringComparison.OrdinalIgnoreCase))
+                        {
                             keys.Add(property);
                         }
 
@@ -254,7 +174,7 @@ namespace OData.Extensions.Graph.Metadata
                 else
                 {
                     // Unknown
-                    unresolved.Item1.AddStructuralProperty(unresolved.Item2.Name.Value, EdmPrimitiveTypeKind.None);
+                    // unresolved.Item1.AddStructuralProperty(unresolved.Item2.Name.Value, EdmPrimitiveTypeKind.None);
                 }
             }
 
@@ -263,7 +183,7 @@ namespace OData.Extensions.Graph.Metadata
                 .Where(f =>
                     f.Name.HasValue &&
                     !f.Name.Value.StartsWith("__") &&
-                    f.Member == null))
+                    f.Member == null && f.ResolverMember == null))
             {
                 var resolvedEntity = model.FindType($"Delegated.Entity.{objectType.Type.TypeName()}") as IEdmEntityType;
 
@@ -272,7 +192,7 @@ namespace OData.Extensions.Graph.Metadata
                     continue;
                 }
 
-                if (IsCollectionType(objectType.RuntimeType))
+                if (objectType.RuntimeType.IsCollectionType())
                 {
                     container.AddEntitySet(objectType.Name, resolvedEntity);
                     continue;
@@ -293,19 +213,10 @@ namespace OData.Extensions.Graph.Metadata
                 .Where(f =>
                     f.Name.HasValue &&
                     !f.Name.Value.StartsWith("__") &&
-                    f.Member != null))
+                    (f.Member != null || f.ResolverMember != null)))
             {
-                var methodInfo = objectType.Member as MethodInfo;
-
-                var returnType = methodInfo.ReturnType;
-
-                if (TryGetCollectionType(returnType, out Type entityType))
-                {
-                    BindEntitySet(builder, entityType, objectType.Name);
-                    continue;
-                }
-
-                BindEntityType(builder, returnType);
+                var binding = OperationBinding.Bind(builder, objectType, true, true);
+                bindingResolver.Register(binding, schemaName);
             }
 
             return builder;

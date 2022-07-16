@@ -15,6 +15,8 @@
     using System.Threading.Tasks;
     using HotChocolate.Execution;
     using HotChocolate.AspNetCore;
+    using HotChocolate.Types.Descriptors;
+    using OData.Extensions.Graph.Conventions;
 
     public static class DependencyInjectionExtensions
     {
@@ -29,14 +31,19 @@
         {
             // Make sure memory caching is enabled / available to use for DI/IoC.
             services.AddMemoryCache();
+            services.AddSingleton<IBindingResolver, BindingResolver>();
 
             return services
                 .AddHttpResultSerializer(HttpResultSerialization.JsonArray)
                 .AddSingleton<IEdmModelProvider, ODataModelSchemaTranslator>(services =>
                 {
-                    return new ODataModelSchemaTranslator(services.GetRequiredService<IRequestExecutorResolver>(), schemaName);
+                    return new ODataModelSchemaTranslator(
+                        services.GetRequiredService<IBindingResolver>(),
+                        services.GetRequiredService<IRequestExecutorResolver>(), 
+                        schemaName);
                 })
-                .AddGraphQLServer(schemaName);
+                .AddGraphQLServer(schemaName)
+                .AddConvention<INamingConventions, ODataGraphNamingConventions>();
         }
 
         // https://github.com/ChilliCream/hotchocolate/blob/ee5813646fdfea81035c681989793514f33b5d94/src/HotChocolate/AspNetCore/src/AspNetCore/Extensions/HotChocolateAspNetCoreServiceCollectionExtensions.Http.cs

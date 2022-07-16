@@ -56,6 +56,7 @@ namespace GraphQLSample.Api
                 .AddInMemorySubscriptions()
                 .AddFiltering()
                 .AddSorting()
+                .AddQueryType()
                 .AddType<ObjectType<User>>()
                 .AddType<ObjectType<Class>>()
                 .AddType<ObjectType<Conference>>()

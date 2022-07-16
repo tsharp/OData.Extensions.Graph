@@ -1,7 +1,6 @@
 ﻿using HotChocolate.Language;
 using Microsoft.OData.Edm;
 using Microsoft.OData.UriParser;
-using Microsoft.OData.UriParser.Validation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,17 +33,20 @@ namespace OData.Extensions.Graph.Lang
             query.PathSegment = pathSegment;
 
             IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
-                        
 
             // Handle select
             var selectClause = parser.ParseSelectAndExpand(); //parse $select, $expand
+            var filterClause = parser.ParseFilter();
+            var skip = parser.ParseSkip();
+            var top = parser.ParseTop();
+            var count = parser.ParseCount();
 
             if (selectClause == null || !selectClause.SelectedItems.Any())
             {
                 throw new Microsoft.OData.ODataException("You must specify the $select or $expand clause with your request. One of these options must not be empty.");
             }
 
-            var selectionSetNode = BuildFromSelectExpandClause(entitySet, selectClause);
+            var selectionSetNode = BuildFromSelectExpandClause(entitySet, filterClause != null, count.HasValue && count.Value, selectClause);
 
             var arguments = new List<ArgumentNode>();
             arguments.AddRange(ODataUtility.GetKeyArguments(path));
@@ -66,6 +68,23 @@ namespace OData.Extensions.Graph.Lang
                 }
 
                 arguments.Add(new ArgumentNode(param.Key, param.Value));
+            }
+
+            if (filterClause != null)
+            {
+                var visitor = new GraphQueryNodeVisitor();
+                var filterArgument = filterClause.Expression.Accept(visitor) as ObjectFieldNode;
+                arguments.Add(new ArgumentNode("where", new ObjectValueNode(filterArgument)));
+            }
+
+            if (skip.HasValue && skip.Value > 0)
+            {
+                arguments.Add(new ArgumentNode("skip", new IntValueNode(skip.Value)));
+            }
+
+            if (top.HasValue && top.Value > 0)
+            {
+                arguments.Add(new ArgumentNode("take", new IntValueNode(top.Value)));
             }
 
             var querySelectionSet = new SelectionSetNode(new ISelectionNode[] {
@@ -91,13 +110,15 @@ namespace OData.Extensions.Graph.Lang
             return query;
         }
 
-        private SelectionSetNode BuildFromSelectExpandClause(IEdmEntitySet entitySet, SelectExpandClause selectionClause)
+        private SelectionSetNode BuildFromSelectExpandClause(IEdmEntitySet entitySet, bool isFilterable, bool includeCount, SelectExpandClause selectionClause)
         {
             var selections = new List<ISelectionNode>();
 
             if (selectionClause != null)
             {
                 var selectedPaths = ParseSelectedPathsFromClause(selectionClause);
+                var expanded = ParseExpandedItems(selectionClause);
+
                 foreach (var astNode in selectedPaths)
                 {
                     if (astNode is ODataSelectPath fieldSelection)
@@ -105,29 +126,104 @@ namespace OData.Extensions.Graph.Lang
                         var selectionName = ODataUtility.GetIdentifierFromSelectedPath(fieldSelection);
                         IEdmProperty edmProperty = EdmUtility.FindEdmProperty(entitySet.EntityType(), selectionName);
 
-                        if (edmProperty.PropertyKind == EdmPropertyKind.Structural)
+                        if (edmProperty.PropertyKind == EdmPropertyKind.Navigation)
                         {
-                            var fieldNode = new FieldNode(
-                                null, 
-                                new NameNode(selectionName),
-                                null, 
-                                null,
-                                Array.Empty<DirectiveNode>(), 
-                                Array.Empty<ArgumentNode>(), 
-                                null);
-                            selections.Add(fieldNode);
+                            continue;
                         }
-                        else if (edmProperty.PropertyKind == EdmPropertyKind.Navigation)
-                        {
-                            //var navigationProperty = (IEdmNavigationProperty)edmProperty;
-                        }
+
+                        var fieldNode = new FieldNode(
+                            null,
+                            new NameNode(selectionName),
+                            null,
+                            null,
+                            Array.Empty<DirectiveNode>(),
+                            Array.Empty<ArgumentNode>(),
+                            null);
+
+                        selections.Add(fieldNode);
                     }
+                }
+            
+                foreach (var astExpand in expanded)
+                {
+                    // TODO: Add navigation property filtering and cleanup this implementation a bit
+                    var expandSelections = BuildFromSelectExpandClause(entitySet, false, false, astExpand.SelectAndExpand);
+
+                    var selectionName = ODataUtility.GetIdentifierFromSelectedPath(astExpand.PathToNavigationProperty);
+                    IEdmProperty edmProperty = EdmUtility.FindEdmProperty(entitySet.EntityType(), selectionName);
+
+                    if (edmProperty.PropertyKind != EdmPropertyKind.Navigation)
+                    {
+                        continue;
+                    }
+
+                    var fieldNode = new FieldNode(
+                        null,
+                        new NameNode(selectionName),
+                        null,
+                        null,
+                        Array.Empty<DirectiveNode>(),
+                        Array.Empty<ArgumentNode>(),
+                        expandSelections);
+
+                    selections.Add(fieldNode);
                 }
             }
 
-            var selectionSet = new SelectionSetNode(selections);
+            if (isFilterable)
+            {
+                var itemsSelections = new List<ISelectionNode>()
+                {
+                    new FieldNode(
+                        null,
+                        new NameNode("items"),
+                        null,
+                        null,
+                        Array.Empty<DirectiveNode>(),
+                        Array.Empty<ArgumentNode>(),
+                        new SelectionSetNode(selections))
+                };
 
-            return selectionSet;
+                if (includeCount)
+                {
+                    itemsSelections.Add(new FieldNode(null,
+                        new NameNode("totalCount"),
+                        null,
+                        null,
+                        Array.Empty<DirectiveNode>(),
+                        Array.Empty<ArgumentNode>(),
+                        null));
+                }
+
+                return new SelectionSetNode(itemsSelections);
+            }
+
+            if (includeCount)
+            {
+                selections.Add(new FieldNode(null,
+                    new NameNode("totalCount"),
+                    null,
+                    null,
+                    Array.Empty<DirectiveNode>(),
+                    Array.Empty<ArgumentNode>(),
+                    null));
+            }
+
+            return new SelectionSetNode(selections);
+        }
+
+        private IEnumerable<ExpandedNavigationSelectItem> ParseExpandedItems(SelectExpandClause clause)
+        {
+            IEnumerable<SelectItem> selectItems = clause.SelectedItems;
+
+            // make sure that there are already selects for this level, otherwise we change the select semantics.
+            bool anyPathSelectItems = selectItems.Any(x => x is ExpandedNavigationSelectItem);
+
+            // if there are selects for this level, then we need to add nav prop select items for each
+            // expanded nav prop
+            IEnumerable<ExpandedNavigationSelectItem> selectedPaths = selectItems.OfType<ExpandedNavigationSelectItem>();
+
+            return selectedPaths;
         }
 
         private IEnumerable<ODataSelectPath> ParseSelectedPathsFromClause(SelectExpandClause clause)

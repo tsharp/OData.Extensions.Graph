@@ -1,0 +1,7 @@
+﻿{
+  user(where: { ClassRef: { Id: { eq: "Milk" } } }) {
+    items {
+      Id
+    }
+  }
+}

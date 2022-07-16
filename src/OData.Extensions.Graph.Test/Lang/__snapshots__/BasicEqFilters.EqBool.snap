@@ -1,0 +1,7 @@
+﻿{
+  user(where: { IsActive: { eq: true } }) {
+    items {
+      Id
+    }
+  }
+}

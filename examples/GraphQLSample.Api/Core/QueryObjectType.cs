@@ -1,5 +1,6 @@
 using GraphQLSample.Api.Dto;
 using HotChocolate.AspNetCore.Authorization;
+using HotChocolate.Data;
 using HotChocolate.Types;
 using System;
 using System.Linq;
@@ -9,8 +10,9 @@ namespace GraphQLSample.Api.Core
     [ObjectType("Query")]
     public class QueryObjectType
     {
-        [Authorize(Roles = new[] { "X" })]
-        public IQueryable<User> Users()
+        [UseOffsetPaging(IncludeTotalCount = true, MaxPageSize = 100, DefaultPageSize = 20)]
+        [UseFiltering]
+        public IQueryable<User> GetUsers()
         {
             return (new User[] {
                 new User()
@@ -20,7 +22,8 @@ namespace GraphQLSample.Api.Core
             }).AsQueryable();
         }
 
-        public IQueryable<Class> classes()
+        [Authorize(Roles = new[] { "X" })]
+        public IQueryable<Class> GetClasses()
         {
             return (new Class[] {
                 new Class()
@@ -30,7 +33,8 @@ namespace GraphQLSample.Api.Core
             }).AsQueryable();
         }
 
-        public IQueryable<Conference> conferences()
+        [Authorize(Roles = new[] { "Y" })]
+        public IQueryable<Conference> GetConferences()
         {
             return (new Conference[] {
                 new Conference()

@@ -1,0 +1,7 @@
+﻿{
+  user(where: { Id: { eq: "1234" } }) {
+    items {
+      Id
+    }
+  }
+}

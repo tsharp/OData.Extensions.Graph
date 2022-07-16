@@ -54,6 +54,8 @@ namespace GraphQLSample.Api
                 .AddODataForGraphQL("ODataGraph")
                 .AddAuthorization()
                 .AddInMemorySubscriptions()
+                .AddFiltering()
+                .AddSorting()
                 .AddType<ObjectType<User>>()
                 .AddType<ObjectType<Class>>()
                 .AddType<ObjectType<Conference>>()

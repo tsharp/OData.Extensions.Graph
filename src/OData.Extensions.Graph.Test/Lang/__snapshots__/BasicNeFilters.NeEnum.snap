@@ -1,0 +1,7 @@
+﻿{
+  user(where: { Status: { neq: UNDEFINED } }) {
+    items {
+      Status
+    }
+  }
+}

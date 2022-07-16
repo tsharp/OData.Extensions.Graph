@@ -1,0 +1,7 @@
+﻿{
+  user(where: { Age: { neq: 100 } }) {
+    items {
+      Id
+    }
+  }
+}

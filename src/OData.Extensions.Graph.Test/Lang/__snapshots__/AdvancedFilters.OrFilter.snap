@@ -1,0 +1,7 @@
+﻿{
+  user(where: { or: { Id: { neq: "Milk" }, Id: { neq: "Sour" } } }) {
+    items {
+      Id
+    }
+  }
+}

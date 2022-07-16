@@ -1,0 +1,7 @@
+﻿{
+  user(where: { CreatedOn: { eq: "2022-01-07" } }) {
+    items {
+      Id
+    }
+  }
+}

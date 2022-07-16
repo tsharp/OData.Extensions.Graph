@@ -16,5 +16,6 @@
         public string EmailAddress { get; set; }
         public Conference[] Conferences { get; set; }
         public StatusCode Status { get; set; }
+        public RefType ClassRef { get; set; }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace GraphQLSample.Api.Dto
 {
@@ -6,5 +7,9 @@ namespace GraphQLSample.Api.Dto
     {
         [Key]
         public string Id { get; set; }
+
+        public DateTimeOffset CreatedOn { get; set; } = DateTime.UtcNow;
+        public DateTimeOffset ModifiedOn { get; set; } = DateTime.UtcNow;
+        public DateTime LastAutomation { get; set; } = DateTime.MinValue;
     }
 }

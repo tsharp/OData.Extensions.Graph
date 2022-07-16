@@ -72,8 +72,8 @@ namespace OData.Extensions.Graph.Lang
             if (filterClause != null)
             {
                 var visitor = new GraphQueryNodeVisitor();
-                var filterArguments = filterClause.Expression.Accept(visitor) as ObjectValueNode;
-                arguments.Add(new ArgumentNode("where", filterArguments));
+                var filterArgument = filterClause.Expression.Accept(visitor) as ObjectValueNode;
+                arguments.Add(new ArgumentNode("where", filterArgument));
             }
 
             var querySelectionSet = new SelectionSetNode(new ISelectionNode[] {

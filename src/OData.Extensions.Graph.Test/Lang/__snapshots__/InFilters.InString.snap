@@ -1,0 +1,7 @@
+﻿{
+  user(where: { Id: { in: [ "Milk", "Cheese" ] } }) {
+    items {
+      Id
+    }
+  }
+}

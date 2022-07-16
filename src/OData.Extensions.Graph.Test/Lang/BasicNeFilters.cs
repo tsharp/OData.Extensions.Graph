@@ -1,5 +1,7 @@
 ﻿using OData.Extensions.Graph.Lang;
 using Snapshooter.Xunit;
+using System.Diagnostics;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace OData.Extensions.Graph.Test.Lang
@@ -43,6 +45,31 @@ namespace OData.Extensions.Graph.Test.Lang
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
+        }
+
+        [Fact]
+        public static void SpeedTest()
+        {
+            // Arrange
+            var translator = new QueryTranslator(Common.GetEdmModel());
+
+            // Act
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+
+            for(int idx = 0; idx <= 10000; idx++)
+            {
+                translator.Translate("/user?$select=Id&$filter=Longitude ne 1.0");
+            }
+
+            timer.Stop();
+
+            var perConvert = timer.ElapsedMilliseconds / 10000.0;
+
+            // Assert
+            // This will be variable depending on the cpu speed / architecture
+            double maxTime = .25;
+            Assert.True(perConvert <= maxTime, $"Expected Conversion Avg to be less than {maxTime} ms per: {perConvert}");
         }
 
         [Fact]

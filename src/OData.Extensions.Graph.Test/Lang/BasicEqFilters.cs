@@ -23,15 +23,24 @@ namespace OData.Extensions.Graph.Test.Lang
         [Fact]
         public static void EqString()
         {
-            var query = "{user(where: {id: { eq: null }}) { items { Id } } }";
-
-            var document = Utf8GraphQLParser.Parse(query);
-
             // Arrange
             var translator = new QueryTranslator(Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id eq '1234'");
+
+            // Assert
+            filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
+        }
+
+        [Fact]
+        public static void EqDate()
+        {
+            // Arrange
+            var translator = new QueryTranslator(Common.GetEdmModel());
+
+            // Act
+            var filerByUserId = translator.Translate("/user?$select=Id&$filter=CreatedOn eq 2022-01-07");
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();

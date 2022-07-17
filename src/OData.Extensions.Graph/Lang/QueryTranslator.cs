@@ -1,6 +1,8 @@
-﻿using HotChocolate.Language;
+﻿using HotChocolate;
+using HotChocolate.Language;
 using Microsoft.OData.Edm;
 using Microsoft.OData.UriParser;
+using OData.Extensions.Graph.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,10 +13,17 @@ namespace OData.Extensions.Graph.Lang
     public class QueryTranslator
     {
         private readonly IEdmModel model;
+        private readonly IBindingResolver bindingResolver;
+        private readonly NameString schemaName;
 
-        public QueryTranslator(IEdmModel model)
+        public QueryTranslator(
+            IBindingResolver bindingResolver, 
+            IEdmModel model,
+            NameString schemaName = default)
         {
+            this.bindingResolver = bindingResolver;
             this.model = model;
+            this.schemaName = schemaName;
         }
 
         public TranslatedQuery Translate(string query)
@@ -33,6 +42,7 @@ namespace OData.Extensions.Graph.Lang
             query.PathSegment = pathSegment;
 
             IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
+            OperationBinding operationBinding = bindingResolver.Resolve(entitySet.Name, schemaName);
 
             // Handle select
             var selectClause = parser.ParseSelectAndExpand(); //parse $select, $expand
@@ -40,13 +50,14 @@ namespace OData.Extensions.Graph.Lang
             var skip = parser.ParseSkip();
             var top = parser.ParseTop();
             var count = parser.ParseCount();
+            var operationName = operationBinding?.Operation ?? entitySet.Name;
 
             if (selectClause == null || !selectClause.SelectedItems.Any())
             {
                 throw new Microsoft.OData.ODataException("You must specify the $select or $expand clause with your request. One of these options must not be empty.");
             }
 
-            var selectionSetNode = BuildFromSelectExpandClause(entitySet, filterClause != null, count.HasValue && count.Value, selectClause);
+            var selectionSetNode = BuildFromSelectExpandClause(entitySet, operationBinding?.CanFilter == true, count.HasValue && count.Value, selectClause);
 
             var arguments = new List<ArgumentNode>();
             arguments.AddRange(ODataUtility.GetKeyArguments(path));
@@ -72,8 +83,7 @@ namespace OData.Extensions.Graph.Lang
 
             if (filterClause != null)
             {
-                var visitor = new GraphQueryNodeVisitor();
-                var filterArgument = filterClause.Expression.Accept(visitor) as ObjectFieldNode;
+                var filterArgument = filterClause.Expression.Accept(GraphQueryNodeVisitor.Instance) as ObjectFieldNode;
                 arguments.Add(new ArgumentNode("where", new ObjectValueNode(filterArgument)));
             }
 
@@ -90,7 +100,7 @@ namespace OData.Extensions.Graph.Lang
             var querySelectionSet = new SelectionSetNode(new ISelectionNode[] {
                 new FieldNode(
                     null,
-                    new NameNode(entitySet.Name),
+                    new NameNode(operationName),
                     null,
                     null,
                     Array.Empty<DirectiveNode>(),

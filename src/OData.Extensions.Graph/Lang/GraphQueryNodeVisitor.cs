@@ -19,6 +19,14 @@ namespace OData.Extensions.Graph.Lang
             ["nendswith"] = "nendsWith"
         };
 
+        private static GraphQueryNodeVisitor instance = new GraphQueryNodeVisitor();
+
+        public static GraphQueryNodeVisitor Instance { get => instance; }
+
+        private GraphQueryNodeVisitor()
+        {
+        }
+
         #region Entry
         public override ISyntaxNode Visit(BinaryOperatorNode nodeIn)
         {
@@ -196,8 +204,6 @@ namespace OData.Extensions.Graph.Lang
             var value = new ObjectValueNode(filter);
 
             return left.WrapNode(value);
-
-            return base.Visit(nodeIn);
         }
 
         public override ISyntaxNode Visit(SingleValuePropertyAccessNode nodeIn)

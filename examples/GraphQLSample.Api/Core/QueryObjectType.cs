@@ -7,9 +7,10 @@ using System.Linq;
 
 namespace GraphQLSample.Api.Core
 {
-    [ObjectType("Query")]
+    [ExtendObjectType("Query")]
     public class QueryObjectType
     {
+        
         [UseOffsetPaging(IncludeTotalCount = true, MaxPageSize = 100, DefaultPageSize = 20)]
         [UseFiltering]
         public IQueryable<User> GetUsers()

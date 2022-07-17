@@ -20,16 +20,21 @@ namespace OData.Extensions.Graph
 {
     public class GraphDataMiddleware : MiddlewareBase
     {
-        private IEdmModelProvider modelProvider;
+        private readonly IEdmModelProvider modelProvider;
+        private readonly IBindingResolver bindingResolver;
+        private readonly NameString schemaName;
 
         public GraphDataMiddleware(
             Microsoft.AspNetCore.Http.RequestDelegate next,
+            IBindingResolver bindingResolver,
             IEdmModelProvider modelProvider,
             IRequestExecutorResolver executorResolver,
             IHttpResultSerializer resultSerializer,
             NameString schemaName)
             : base(next, executorResolver, resultSerializer, schemaName)
         {
+            this.schemaName = schemaName;
+            this.bindingResolver = bindingResolver;
             this.modelProvider = modelProvider;
         }
 
@@ -52,7 +57,7 @@ namespace OData.Extensions.Graph
 
             try
             {
-                var qt = new QueryTranslator(model);
+                var qt = new QueryTranslator(bindingResolver, model, schemaName);
 
                 if (await HandleRequestAsync(context, parser, qt))
                 {
@@ -73,9 +78,11 @@ namespace OData.Extensions.Graph
         private async Task<bool> HandleRequestAsync(HttpContext context, ODataUriParser parser, QueryTranslator qt)
         {
             // Do Conversion Stuff ...
+            TranslatedQuery translatedQuery = null;
+
             try
             {
-                var translatedQuery = qt.Translate(parser);
+                translatedQuery = qt.Translate(parser);
                 var result = await ExecuteGraphQuery(context, translatedQuery.PathSegment, translatedQuery.DocumentNode);
                 await SendResponseObjectAsync(context, result);
 
@@ -84,7 +91,7 @@ namespace OData.Extensions.Graph
             {
                 var result = new Dictionary<string, object>()
                 {
-                    ["@odata.context"] = "https://api.msrc.microsoft.com/sug/v2.0/en-US/$metadata#Edm.String",
+                    ["@odata.context"] = "https://some.random-api.com/api/$metadata#Edm.String",
                     ["@odata.next"] = null,
                     ["@odata.count"] = null,
                     ["errors"] = new object[]
@@ -96,13 +103,21 @@ namespace OData.Extensions.Graph
                         }
                 };
 
+#if DEBUG
+                if (translatedQuery != null)
+                {
+                    result.Add("debug_commandText", translatedQuery.DocumentNode.ToString(true));
+                    result.Add("debug_pathSegment", translatedQuery.PathSegment);
+                }
+#endif
+
                 await SendResponseObjectAsync(context, result, StatusCodes.Status500InternalServerError);
             }
             catch (Exception ex)
             {
                 var result = new Dictionary<string, object>()
                 {
-                    ["@odata.context"] = "https://api.msrc.microsoft.com/sug/v2.0/en-US/$metadata#Edm.String",
+                    ["@odata.context"] = "https://some.random-api.com/api/$metadata#Edm.String",
                     ["@odata.next"] = null,
                     ["@odata.count"] = null,
                     ["errors"] = new object[]
@@ -113,6 +128,14 @@ namespace OData.Extensions.Graph
                             }
                         }
                 };
+
+#if DEBUG
+                if (translatedQuery != null)
+                {
+                    result.Add("debug_commandText", translatedQuery.DocumentNode.ToString(true));
+                    result.Add("debug_pathSegment", translatedQuery.PathSegment);
+                }
+#endif
 
                 await SendResponseObjectAsync(context, result, StatusCodes.Status500InternalServerError);
             }
@@ -167,6 +190,14 @@ namespace OData.Extensions.Graph
                     response.Add("errors", errors);
                     context.Response.StatusCode = 500;
 
+#if DEBUG
+                    if (document != null)
+                    {
+                        response.Add("debug_commandText", document.ToString(true));
+                        response.Add("debug_pathSegment", entitySet);
+                    }
+#endif
+
                     if (response.Any(e => e.Key == ErrorCodes.Authentication.NotAuthenticated))
                     {
                         context.Response.StatusCode = 401;
@@ -187,20 +218,32 @@ namespace OData.Extensions.Graph
 
                 if (queryResult != null)
                 {
-                    var resultMap = (ResultMapList)queryResult.Data[entitySet];
+                    var operation = bindingResolver.Resolve(entitySet, schemaName);
+                    // WARN: This may be a ResultMapList
+                    var resultMap = (ResultMap)queryResult.Data[operation?.Operation ?? entitySet];
                     var values = new List<IDictionary<string, object>>();
 
                     response.Add("values", values);
 
-                    foreach (var entity in resultMap)
-                    {
-                        var entityDict = new Dictionary<string, object>();
-                        values.Add(entityDict);
+                    var entityDict = new Dictionary<string, object>();
+                    values.Add(entityDict);
 
-                        foreach (var property in entity)
+                    foreach (var property in resultMap)
+                    {
+                        if(property.Name == "items")
                         {
-                            entityDict.Add(property.Name, property.Value);
+                            foreach(var subList in property.Value as ResultMapList)
+                            {
+                                foreach (var attribute in subList)
+                                {
+                                    entityDict.Add(attribute.Name, attribute.Value);
+                                }
+                            }
+
+                            continue;
                         }
+
+                        entityDict.Add(property.Name, property.Value);
                     }
 
                     return response;

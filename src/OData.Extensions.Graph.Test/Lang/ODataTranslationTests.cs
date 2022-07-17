@@ -11,7 +11,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void EmptySelectClause()
         {
             // Arrange
-            var translator = new QueryTranslator(Common.GetEdmModel());
+            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
 
@@ -25,13 +25,13 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void EntitySetTranslation()
         {
             // Arrange
-            var translator = new QueryTranslator(Common.GetEdmModel());
+            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var basic_selectUserId = translator.Translate("/user?$select=Id");
 
             // Assert
-            Snapshot.Match(basic_selectUserId);
+            basic_selectUserId.MatchSnapshot();
         }
     }
 }

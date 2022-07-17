@@ -12,6 +12,8 @@ namespace OData.Extensions.Graph
                 NameResolverOptions.ProcessReflectedPropertyNames |
                 NameResolverOptions.ProcessExplicitPropertyNames |
                 NameResolverOptions.ProcessDataMemberAttributePropertyNames);
+
+            this.Namespace = "Graph.Dto";
         }
     }
 }

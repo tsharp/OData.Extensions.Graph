@@ -2,15 +2,18 @@ using GraphQLSample.Api.Dto;
 using HotChocolate.AspNetCore.Authorization;
 using HotChocolate.Data;
 using HotChocolate.Types;
+using OData.Extensions.Graph.Annotations;
+using OData.Extensions.Graph.Security;
 using System;
 using System.Linq;
 
 namespace GraphQLSample.Api.Core
 {
-    [ExtendObjectType("Query")]
+    // [ExtendObjectType("Query")]
+    [ApplyServiceNamespace]
     public class QueryObjectType
     {
-        
+        [AccessModifier(OperationAccessModifier.Public)]
         [UseOffsetPaging(IncludeTotalCount = true, MaxPageSize = 100, DefaultPageSize = 20)]
         [UseFiltering]
         public IQueryable<User> GetUsers()

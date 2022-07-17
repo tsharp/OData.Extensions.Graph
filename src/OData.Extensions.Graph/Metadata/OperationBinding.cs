@@ -1,6 +1,7 @@
 ﻿using HotChocolate;
 using HotChocolate.Types;
 using Microsoft.OData.ModelBuilder;
+using OData.Extensions.Graph.Security;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,14 +9,6 @@ using System.Reflection;
 
 namespace OData.Extensions.Graph.Metadata
 {
-    public enum OperationAccessModifier
-    {
-        Unknown,
-        Public,
-        Internal,
-        System
-    }
-
     public class OperationBinding
     {
         public bool IsSet { get; set; } = false;
@@ -92,13 +85,18 @@ namespace OData.Extensions.Graph.Metadata
             return string.Join('_', setNameParts.Skip(skip));
         }
 
-        public static OperationBinding Bind(ODataModelBuilder builder, ObjectField objectType, bool useNamespaces = false, bool useAccessModifiers = false)
+        public static void Bind(ODataModelBuilder builder, ObjectType objectType)
+        {
+            builder.BindEntityType(objectType.RuntimeType);
+        }
+
+        public static OperationBinding Bind(ODataModelBuilder builder, ObjectField objectField, bool useNamespaces = false, bool useAccessModifiers = false)
         {
             var binding = new OperationBinding();
-            var methodInfo = (objectType.Member ?? objectType.ResolverMember) as MethodInfo;
+            var methodInfo = (objectField.Member ?? objectField.ResolverMember) as MethodInfo;
             var returnType = methodInfo.ReturnType;
 
-            binding.Arguments.AddRange(objectType.Arguments.Select(arg => arg.Name));
+            binding.Arguments.AddRange(objectField.Arguments.Select(arg => arg.Name));
             binding.CanPage = binding.Arguments.Any(arg => arg == "skip");
             binding.CanFilter = binding.Arguments.Any(arg => arg == "where");
             binding.CanSort = binding.Arguments.Any(arg => arg == "order");
@@ -116,25 +114,29 @@ namespace OData.Extensions.Graph.Metadata
 
                 if (useAccessModifiers)
                 {
-                    binding.AccessModifier = ParseModifier(objectType.Name);
+                    binding.AccessModifier = ParseModifier(objectField.Name);
                 }
 
                 if (useNamespaces)
                 {
-                    binding.Namespace = ParseNamespace(objectType.Name, useAccessModifiers);
+                    binding.Namespace = ParseNamespace(objectField.Name, useAccessModifiers);
                 }
 
-                binding.EntitySet = ParseEntitySetName(objectType.Name, useNamespaces, useAccessModifiers);
-                binding.Operation = objectType.Name;
+                binding.EntitySet = ParseEntitySetName(objectField.Name, useNamespaces, useAccessModifiers);
+                binding.Operation = objectField.Name;
+
+                // This EntitySet shouldn't be exposed
+                if (binding.EntitySet == default || binding.EntitySet == null)
+                {
+                    return null;
+                }
 
                 builder.BindEntitySet(entityType, binding.EntitySet);
 
                 return binding;
             }
 
-            builder.BindEntityType(returnType);
-            binding.EntityName = returnType.Name;
-            return binding;
+            return null;
         }
     }
 }

@@ -76,7 +76,7 @@ namespace OData.Extensions.Graph.Metadata
                 .GetMethod("EntitySet", BindingFlags.Public | BindingFlags.Instance,
                 null, new Type[] { typeof(string) }, null);
 
-            entitySetInfo.MakeGenericMethod(baseType).Invoke(builder, new[] { entitySet });
+            dynamic result = entitySetInfo.MakeGenericMethod(baseType).Invoke(builder, new[] { entitySet });
         }
 
         public static void BindEntityType(this ODataModelBuilder builder, Type baseType)
@@ -85,7 +85,7 @@ namespace OData.Extensions.Graph.Metadata
                 .GetMethod("EntityType", BindingFlags.Public | BindingFlags.Instance,
                 null, new Type[] { }, null);
 
-            entitySetInfo.MakeGenericMethod(baseType).Invoke(builder, null);
+            dynamic result = entitySetInfo.MakeGenericMethod(baseType).Invoke(builder, null);
         }
     }
 }

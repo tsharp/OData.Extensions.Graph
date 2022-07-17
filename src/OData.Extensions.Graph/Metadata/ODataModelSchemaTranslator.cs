@@ -56,11 +56,11 @@ namespace OData.Extensions.Graph.Metadata
         public IEdmModel Translate(ISchema schema)
         {
             EdmModel model = new EdmModel(true);
-
+            var builder = new GraphConventionModelBuilder();
             // This will parse and add models from the localized api, stitched schemas
             // need a separate pass on this.
-            var local = ParseLocalSchema(new GraphConventionModelBuilder(), schema).GetEdmModel();
-            var @delegate = ParseDelegateSchema(schema);
+            var local = ParseLocalSchema(builder, schema).GetEdmModel();
+            var @delegate = ParseDelegateSchema(builder.Namespace, local, schema);
 
             if (local.SchemaElements.Any())
             {
@@ -93,8 +93,9 @@ namespace OData.Extensions.Graph.Metadata
             }
         }
 
-        private IEdmModel ParseDelegateSchema(ISchema schema)
+        private IEdmModel ParseDelegateSchema(string @localNamespace, IEdmModel localModel, ISchema schema)
         {
+            var remoteNamespace = @localNamespace;
             var model = new EdmModel(true);
             var container = model.AddEntityContainer("Default", "Container");
 
@@ -109,7 +110,15 @@ namespace OData.Extensions.Graph.Metadata
                     t.Name != schema.MutationType?.Name &&
                     t.Name != schema.QueryType?.Name))
             {
-                var entityType = new EdmEntityType("Delegated.Entity", objectType.Name.Value);
+                // Attempt to locate existing ...
+                var entityResolved = localModel.FindType($"{@localNamespace}.{objectType.Name.Value}");
+
+                if (entityResolved != null || objectType.RuntimeType.FullName.StartsWith("HotChocolate."))
+                {
+                    continue;
+                }
+
+                var entityType = new EdmEntityType(remoteNamespace, objectType.Name.Value);
                 model.AddElement(entityType);
                 var keys = new List<IEdmStructuralProperty>();
 
@@ -145,12 +154,7 @@ namespace OData.Extensions.Graph.Metadata
 
             foreach (var unresolved in unresolvedFields)
             {
-                var resolved = model.FindType($"Delegated.Entity.{unresolved.Item2.Type.TypeName()}");
-
-                if (resolved == null)
-                {
-                    resolved = model.FindType($"Delegated.Type.{unresolved.Item2.Type.TypeName()}");
-                }
+                var resolved = model.FindType($"{remoteNamespace}.{unresolved.Item2.Type.TypeName()}");
 
                 var resolvedEntity = resolved as IEdmEntityType;
                 var resolvedComplex = resolved as IEdmComplexType;
@@ -185,7 +189,7 @@ namespace OData.Extensions.Graph.Metadata
                     !f.Name.Value.StartsWith("__") &&
                     f.Member == null && f.ResolverMember == null))
             {
-                var resolvedEntity = model.FindType($"Delegated.Entity.{objectType.Type.TypeName()}") as IEdmEntityType;
+                var resolvedEntity = model.FindType($"{remoteNamespace}.{objectType.Type.TypeName()}") as IEdmEntityType;
 
                 if (resolvedEntity == null)
                 {
@@ -208,15 +212,29 @@ namespace OData.Extensions.Graph.Metadata
 
         private ODataModelBuilder ParseLocalSchema(ODataModelBuilder builder, ISchema schema)
         {
-            // Process Local Schema
-            foreach (var objectType in schema.QueryType.Fields
+            //// Process Entities
+            //foreach (var objectType in schema.Types.Where(t => 
+            //        t.Kind == TypeKind.Object && 
+            //        t.Name.HasValue &&
+            //        !t.Name.Value.StartsWith("__") &&
+            //        t.GetType().GenericTypeArguments.Any()).Cast<ObjectType>())
+            //{
+            //    OperationBinding.Bind(builder, objectType);
+            //}
+
+            // Process Entity Sets
+            foreach (var objectField in schema.QueryType.Fields
                 .Where(f =>
                     f.Name.HasValue &&
                     !f.Name.Value.StartsWith("__") &&
                     (f.Member != null || f.ResolverMember != null)))
             {
-                var binding = OperationBinding.Bind(builder, objectType, true, true);
-                bindingResolver.Register(binding, schemaName);
+                var binding = OperationBinding.Bind(builder, objectField, true, true);
+
+                if (binding != null)
+                {
+                    bindingResolver.Register(binding, schemaName);
+                }
             }
 
             return builder;

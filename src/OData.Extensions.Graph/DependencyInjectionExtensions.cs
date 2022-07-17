@@ -27,11 +27,12 @@
                 .Any();
         }
 
-        public static IRequestExecutorBuilder AddODataForGraphQL(this IServiceCollection services, NameString schemaName = default)
+        public static IRequestExecutorBuilder AddODataForGraphQL(this IServiceCollection services, NameString schemaName = default, NameString serviceName = default)
         {
             // Make sure memory caching is enabled / available to use for DI/IoC.
             services.AddMemoryCache();
             services.AddSingleton<IBindingResolver, BindingResolver>();
+            services.AddSingleton(new ServiceNamespaceProvider(serviceName));
 
             return services
                 .AddHttpResultSerializer(HttpResultSerialization.JsonArray)

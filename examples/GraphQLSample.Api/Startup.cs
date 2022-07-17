@@ -11,6 +11,7 @@ using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using Microsoft.OpenApi.Models;
 using OData.Extensions.Graph;
+using System;
 
 namespace GraphQLSample.Api
 {
@@ -32,6 +33,11 @@ namespace GraphQLSample.Api
                 .AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
                 .AddMicrosoftIdentityWebApp(Configuration.GetSection("AzureAd"));
 
+            //services.AddHttpClient("jobs", (sp, client) =>
+            //{
+            //    client.BaseAddress = new Uri("https://swapi-graphql.netlify.app/.netlify/functions/index");
+            //});
+
             services.AddAuthorization(options =>
             {
                 // By default, all incoming requests will be authorized according to the default policy
@@ -51,18 +57,22 @@ namespace GraphQLSample.Api
             });
 
             services
-                .AddODataForGraphQL("ODataGraph")
+                .AddODataForGraphQL("ODataGraph", "test")
                 .AddAuthorization()
                 .AddInMemorySubscriptions()
+                // TODO: More testing and dynamic configuration with remote schemas
+                // for the time being this api fully supports HotChocolate based GraphQL
+                // api's
+                // .AddRemoteSchema("jobs")
                 .AddFiltering()
                 .AddSorting()
-                .AddQueryType()
+                // .AddQueryType()
                 .AddType<ObjectType<User>>()
                 .AddType<ObjectType<Class>>()
                 .AddType<ObjectType<Conference>>()
-                //.AddSubscriptionType<SubscriptionObjectType>()
-                //.AddMutationType<MutationObjectType>()
-                .AddTypeExtension<QueryObjectType>();
+                // .AddSubscriptionType<SubscriptionObjectType>()
+                // .AddMutationType<MutationObjectType>()
+                .AddQueryType<QueryObjectType>();
 
             services.AddCors(options =>
             {
@@ -90,7 +100,7 @@ namespace GraphQLSample.Api
             // app.UseHttpsRedirection();
 
             // 1.1 Use forwarded headers since containers are behind a proxy.
-            // app.UseForwardedHeaders();
+            app.UseForwardedHeaders();
 
             // 1.2 Use configured request scheme
             // https://docs.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer?view=aspnetcore-3.1
@@ -107,28 +117,10 @@ namespace GraphQLSample.Api
                 return next();
             });
 
-            //app.Use(async (context, next) =>
-            //{
-            //    if(context.Request.Path.Value?.EndsWith(".well-known/microsoft-identity-association.json", System.StringComparison.InvariantCultureIgnoreCase) == false)
-            //    {
-            //        await next();
-            //        return;
-            //    }
-
-            //    context.Response.StatusCode = 200;
-            //    context.Response.ContentType = "application/json";
-            //    var content = Encoding.UTF8.GetBytes("{ \"associatedApplications\": [{ \"applicationId\": \"76091f8b-03aa-4a42-a05b-c4ca7561b0bd\" }] }");
-            //    await context.Response.Body.WriteAsync(content, 0, content.Length);
-            //    await context.Response.Body.FlushAsync();
-            //});
-
             app.UseStaticFiles();
             app.UseWebSockets();
             app.UseRouting();
             app.UseCors("default");
-
-            // app.UseAuthentication();
-            // app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {

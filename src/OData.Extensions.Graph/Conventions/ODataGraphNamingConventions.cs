@@ -1,43 +1,56 @@
 ﻿using HotChocolate;
 using HotChocolate.Types;
 using HotChocolate.Types.Descriptors;
-using System;
+using OData.Extensions.Graph.Annotations;
+using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 
 namespace OData.Extensions.Graph.Conventions
 {
     public class ODataGraphNamingConventions : DefaultNamingConventions
     {
-        public override string GetMemberDescription(MemberInfo member, MemberKind kind)
+        private readonly ServiceNamespaceProvider serviceNamespaceProvider;
+
+        public ODataGraphNamingConventions(ServiceNamespaceProvider serviceNamespaceProvider)
         {
-            var description = base.GetMemberDescription(member, kind);
-
-            System.Diagnostics.Debug.WriteLine($"MEMBER_DESCRIPTION => {description}");
-
-            if (description == "users")
-            {
-
-            }
-
-            return description;
+            this.serviceNamespaceProvider = serviceNamespaceProvider;
         }
 
         public override NameString GetMemberName(MemberInfo member, MemberKind kind)
         {
-            var typeExtensionAttribute = member.DeclaringType.GetCustomAttribute<ExtendObjectTypeAttribute>();
-            var objectTypeAttribute = member.DeclaringType.GetCustomAttribute<ObjectTypeAttribute>();
+            var accessModifier = member.GetCustomAttribute<AccessModifierAttribute>();
+            var applyNamespace = member.DeclaringType.GetCustomAttribute<ApplyServiceNamespaceAttribute>() != null;
+            var @namespace = serviceNamespaceProvider.ServiceName;
 
-            var name = base.GetMemberName(member, kind);
-            var namePrefix = string.Empty;
-
-            System.Diagnostics.Debug.WriteLine($"MEMBER_NAME => {name}");
-
-            if (typeExtensionAttribute != null || objectTypeAttribute != null)
+            if (accessModifier == null)
             {
-                namePrefix = $"pub_az_";
+                accessModifier = member.DeclaringType.GetCustomAttribute<AccessModifierAttribute>();
             }
 
-            return $"{namePrefix}{name}";
+            if( (!applyNamespace && accessModifier == null) ||
+                (@namespace == default && accessModifier == null))
+            {
+                return base.GetMemberName(member, kind);
+            }
+
+            var nameBuilder = new StringBuilder();
+
+            if (accessModifier != null)
+            {
+                nameBuilder.Append(accessModifier);
+                nameBuilder.Append("_");
+            }
+
+            if (applyNamespace && @namespace != default)
+            {
+                nameBuilder.Append(@namespace);
+                nameBuilder.Append("_");
+            }
+
+            nameBuilder.Append(base.GetMemberName(member, kind));
+
+            return nameBuilder.ToString();
         }
     }
 }

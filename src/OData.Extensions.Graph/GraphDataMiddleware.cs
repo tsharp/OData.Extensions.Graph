@@ -23,7 +23,7 @@ namespace OData.Extensions.Graph
         private readonly IEdmModelProvider modelProvider;
         private readonly IBindingResolver bindingResolver;
         private readonly NameString schemaName;
-
+        
         public GraphDataMiddleware(
             Microsoft.AspNetCore.Http.RequestDelegate next,
             IBindingResolver bindingResolver,

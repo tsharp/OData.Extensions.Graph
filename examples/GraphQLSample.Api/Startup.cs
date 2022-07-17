@@ -68,7 +68,7 @@ namespace GraphQLSample.Api
                 .AddSorting()
                 // .AddQueryType()
                 .AddType<ObjectType<User>>()
-                .AddType<ObjectType<Class>>()
+                .AddType<ClassObjectType>()
                 .AddType<ObjectType<Conference>>()
                 // .AddSubscriptionType<SubscriptionObjectType>()
                 // .AddMutationType<MutationObjectType>()

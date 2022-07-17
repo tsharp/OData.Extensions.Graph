@@ -1,4 +1,6 @@
-﻿namespace GraphQLSample.Api.Dto
+﻿using HotChocolate;
+
+namespace GraphQLSample.Api.Dto
 {
     public enum StatusCode
     {
@@ -15,6 +17,11 @@
         public bool IsActive { get; set; }
         public string EmailAddress { get; set; }
         public Conference[] Conferences { get; set; }
+        public Class[] Classes { get; set; }
+
+        [GraphQLIgnore]
+        public string HiddenField { get; set; }
+
         public StatusCode Status { get; set; }
         public RefType ClassRef { get; set; }
     }

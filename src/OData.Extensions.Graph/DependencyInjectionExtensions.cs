@@ -17,6 +17,7 @@
     using HotChocolate.AspNetCore;
     using HotChocolate.Types.Descriptors;
     using OData.Extensions.Graph.Conventions;
+    using Microsoft.Extensions.Caching.Memory;
 
     public static class DependencyInjectionExtensions
     {
@@ -39,6 +40,7 @@
                 .AddSingleton<IEdmModelProvider, ODataModelSchemaTranslator>(services =>
                 {
                     return new ODataModelSchemaTranslator(
+                        services.GetRequiredService<IMemoryCache>(),
                         services.GetRequiredService<IBindingResolver>(),
                         services.GetRequiredService<IRequestExecutorResolver>(), 
                         schemaName);

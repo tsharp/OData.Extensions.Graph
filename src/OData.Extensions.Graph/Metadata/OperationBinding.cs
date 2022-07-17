@@ -4,8 +4,10 @@ using Microsoft.OData.ModelBuilder;
 using OData.Extensions.Graph.Security;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 
 namespace OData.Extensions.Graph.Metadata
 {
@@ -88,6 +90,26 @@ namespace OData.Extensions.Graph.Metadata
         public static void Bind(ODataModelBuilder builder, ObjectType objectType)
         {
             builder.BindEntityType(objectType.RuntimeType);
+            var entityType = builder.StructuralTypes
+                .OfType<EntityTypeConfiguration>()
+                .Where(t => t.ClrType == objectType.RuntimeType)
+                .Single();
+
+            foreach (var property in objectType.RuntimeType.GetProperties())
+            {
+                var hasRemovable = property.GetCustomAttribute<GraphQLIgnoreAttribute>() != null ||
+                        property.GetCustomAttribute<IgnoreDataMemberAttribute>() != null ||
+                        property.GetCustomAttribute<NotMappedAttribute>() != null ||
+                        property.GetCustomAttribute<System.Text.Json.Serialization.JsonIgnoreAttribute>() != null ||
+                        property.GetCustomAttribute<Newtonsoft.Json.JsonIgnoreAttribute>() != null;
+
+                if (!hasRemovable && objectType.Fields.Where(f => f.ResolverMember == property).Any())
+                {
+                    continue;
+                }
+
+                entityType.RemoveProperty(property);
+            }
         }
 
         public static OperationBinding Bind(ODataModelBuilder builder, ObjectField objectField, bool useNamespaces = false, bool useAccessModifiers = false)

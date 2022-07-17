@@ -10,7 +10,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="HotChocolate.Language" Version="12.6.*" />
+		<PackageReference Include="HotChocolate.Language" Version="12.11.*" />
 		<PackageReference Include="Microsoft.AspNetCore.OData" Version="8.0.*" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
 		<PackageReference Include="Snapshooter.Xunit" Version="0.7.1" />

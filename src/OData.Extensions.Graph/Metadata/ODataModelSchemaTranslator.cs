@@ -2,10 +2,12 @@
 using HotChocolate.Execution;
 using HotChocolate.Types;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -18,12 +20,15 @@ namespace OData.Extensions.Graph.Metadata
         private readonly IRequestExecutorResolver executorResolver;
         private readonly NameString schemaName;
         private readonly IBindingResolver bindingResolver;
+        private readonly IMemoryCache memoryCache;
 
         public ODataModelSchemaTranslator(
+            IMemoryCache memoryCache,
             IBindingResolver bindingResolver,
             IRequestExecutorResolver executorResolver,
             NameString schemaName = default)
         {
+            this.memoryCache = memoryCache;
             this.bindingResolver = bindingResolver;
             this.schemaName = schemaName;
             this.executorResolver = executorResolver;
@@ -31,16 +36,23 @@ namespace OData.Extensions.Graph.Metadata
 
         public async Task<IEdmModel> GetModelAsync(HttpRequest request)
         {
-            var executor = await executorResolver.GetRequestExecutorAsync(schemaName, request.HttpContext.RequestAborted);
 
-            using (MemoryStream stream = new MemoryStream())
+            return await memoryCache.GetOrCreateAsync(await GetModelCacheIdAsync(request), async entry =>
             {
-                await SchemaSerializer.SerializeAsync(executor.Schema, stream);
+                var executor = await executorResolver.GetRequestExecutorAsync(schemaName, request.HttpContext.RequestAborted);
 
-                var txt = Encoding.UTF8.GetString(stream.ToArray());
-            }
+                using (MemoryStream stream = new MemoryStream())
+                {
+                    await SchemaSerializer.SerializeAsync(executor.Schema, stream);
 
-            return Translate(executor.Schema);
+                    var txt = Encoding.UTF8.GetString(stream.ToArray());
+                }
+
+                entry.SetValue(Translate(executor.Schema));
+
+                return entry.Value as IEdmModel;
+            });
+            
         }
 
         public async Task<string> GetModelCacheIdAsync(HttpRequest request)
@@ -49,7 +61,7 @@ namespace OData.Extensions.Graph.Metadata
 
             var baseSchemaName = schemaName.HasValue ? schemaName.Value : "default";
             var subType = request.HttpContext.User.Identity.IsAuthenticated ? "anonymous" : "authenticated";
-            return $"{baseSchemaName}.{subType}";
+            return $"{baseSchemaName}.{subType}.{schemaName}";
         }
 
         // TODO: Fix schema stitch where a downstream api attempts to stitch in a new type ... how to handle?
@@ -212,15 +224,21 @@ namespace OData.Extensions.Graph.Metadata
 
         private ODataModelBuilder ParseLocalSchema(ODataModelBuilder builder, ISchema schema)
         {
-            //// Process Entities
-            //foreach (var objectType in schema.Types.Where(t => 
-            //        t.Kind == TypeKind.Object && 
-            //        t.Name.HasValue &&
-            //        !t.Name.Value.StartsWith("__") &&
-            //        t.GetType().GenericTypeArguments.Any()).Cast<ObjectType>())
-            //{
-            //    OperationBinding.Bind(builder, objectType);
-            //}
+            // Process Entities
+            foreach (var objectType in schema.Types.Where(t =>
+                    t.Kind == TypeKind.Object &&
+                    t.Name.HasValue &&
+                    !t.Name.Value.StartsWith("__") &&
+                    t.GetType().GenericTypeArguments.Any()).Cast<ObjectType>())
+            {
+                // No
+                if(objectType.RuntimeType.FullName.StartsWith("HotChocolate."))
+                {
+                    continue;
+                }
+                Debug.WriteLine(objectType.RuntimeType.FullName);
+                OperationBinding.Bind(builder, objectType);
+            }
 
             // Process Entity Sets
             foreach (var objectField in schema.QueryType.Fields

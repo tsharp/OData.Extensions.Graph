@@ -57,7 +57,21 @@ namespace OData.Extensions.Graph.Lang
                 throw new Microsoft.OData.ODataException("You must specify the $select or $expand clause with your request. One of these options must not be empty.");
             }
 
-            var selectionSetNode = BuildFromSelectExpandClause(entitySet, operationBinding?.CanFilter == true, count.HasValue && count.Value, selectClause);
+            var hasFiltering = false;
+
+            // An operation binding has direct information regarding filtering
+            if (operationBinding != null)
+            {
+                hasFiltering = operationBinding.CanFilter;
+            } 
+            // An operation binding can't help here and we must try to make a best
+            // effort to infer whether or not we have filtering available
+            else
+            {
+                hasFiltering = filterClause != null;
+            }
+
+            var selectionSetNode = BuildFromSelectExpandClause(entitySet, hasFiltering, count.HasValue && count.Value, selectClause);
 
             var arguments = new List<ArgumentNode>();
             arguments.AddRange(ODataUtility.GetKeyArguments(path));

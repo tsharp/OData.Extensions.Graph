@@ -3,10 +3,10 @@ next-version: 0.3
 mode: ContinuousDeployment
 branches:
   release:
-    tag: ''
+    tag: ""
   feature:
-    tag: 'dev'
+    tag: "dev"
   main:
-  	tag: 'beta'
+    tag: "beta"
 ignore:
   sha: []

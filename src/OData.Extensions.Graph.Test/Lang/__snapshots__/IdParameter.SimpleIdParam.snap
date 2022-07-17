@@ -1,7 +1,0 @@
-﻿{
-  user(Id: { eq: "abc" }) {
-    items {
-      Id
-    }
-  }
-}

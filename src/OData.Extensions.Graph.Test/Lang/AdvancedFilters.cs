@@ -16,7 +16,7 @@ namespace OData.Extensions.Graph.Test.Lang
             Utf8GraphQLParser.Parse(query).ToString(true).MatchSnapshot();
 
             // Arrange
-            var translator = new QueryTranslator(Common.GetEdmModel());
+            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$filter=ClassRef/Id eq 'Milk'");
@@ -29,7 +29,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void DoubleNestedPropertyEq()
         {
             // Arrange
-            var translator = new QueryTranslator(Common.GetEdmModel());
+            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$filter=ClassRef/In/Id eq 'Milk'");
@@ -42,7 +42,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void AndFilter()
         {
             // Arrange
-            var translator = new QueryTranslator(Common.GetEdmModel());
+            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id ne 'Milk' and Id ne 'Sour'");
@@ -55,7 +55,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void OrFilter()
         {
             // Arrange
-            var translator = new QueryTranslator(Common.GetEdmModel());
+            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id ne 'Milk' or Id ne 'Sour'");
@@ -68,7 +68,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void Skip()
         {
             // Arrange
-            var translator = new QueryTranslator(Common.GetEdmModel());
+            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$skip=5");
@@ -81,7 +81,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void Top()
         {
             // Arrange
-            var translator = new QueryTranslator(Common.GetEdmModel());
+            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$top=5");
@@ -94,7 +94,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void NavigationProperty()
         {
             // Arrange
-            var translator = new QueryTranslator(Common.GetEdmModel());
+            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$expand=Conferences($select=Id)");
@@ -107,7 +107,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void Count()
         {
             // Arrange
-            var translator = new QueryTranslator(Common.GetEdmModel());
+            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$count=true");
@@ -121,7 +121,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void ComplexFilter()
         {
             // Arrange
-            var translator = new QueryTranslator(Common.GetEdmModel());
+            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id ne 'Milk' or Id ne 'Sour' and (Id eq 'bob' or CreatedOn lt 2022-01-05)");
@@ -134,7 +134,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void ContainsFilter()
         {
             // Arrange
-            var translator = new QueryTranslator(Common.GetEdmModel());
+            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$filter=contains(Id, 'Milk')");
@@ -147,7 +147,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void StartsWithFilter()
         {
             // Arrange
-            var translator = new QueryTranslator(Common.GetEdmModel());
+            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$filter=startswith(Id, 'Milk')");
@@ -160,7 +160,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void NotStartsWithFilter()
         {
             // Arrange
-            var translator = new QueryTranslator(Common.GetEdmModel());
+            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             Assert.Throws<ODataException>(() =>
@@ -176,7 +176,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void EndsWithFilter()
         {
             // Arrange
-            var translator = new QueryTranslator(Common.GetEdmModel());
+            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$filter=endswith(Id, 'Milk')");

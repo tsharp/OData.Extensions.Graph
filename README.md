@@ -1,6 +1,6 @@
 # OData.Extensions.Graph
 
-[![.NET](https://github.com/tsharp/OData.Extensions.Graph/actions/workflows/dotnet.yml/badge.svg)](https://github.com/tsharp/OData.Extensions.Graph/actions/workflows/dotnet.yml)
+[![Latest Build](https://github.com/tsharp/OData.Extensions.Graph/actions/workflows/dotnet_official.yml/badge.svg)](https://github.com/tsharp/OData.Extensions.Graph/actions/workflows/dotnet_official.yml)
 
 Graph / GraphQL Extensions for OData
 

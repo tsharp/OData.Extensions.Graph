@@ -1,9 +1,12 @@
 # https://gitversion.net/docs/reference/configuration#branch-configuration
 next-version: 0.3
-mode: Mainline
+mode: ContinuousDeployment
 branches:
+  release:
+    tag: ''
   feature:
-    tag: beta
-  main: {}
+    tag: 'dev'
+  main:
+  	tag: 'beta'
 ignore:
   sha: []

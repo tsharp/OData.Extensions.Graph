@@ -3,6 +3,7 @@ name: Official Build
 on:
   push:
     branches:
+      - main
       - release/*
 
 jobs:

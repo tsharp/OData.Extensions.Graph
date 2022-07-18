@@ -36,15 +36,15 @@ namespace OData.Extensions.Graph.Conventions
 
             var nameBuilder = new StringBuilder();
 
-            if (accessModifier != null)
-            {
-                nameBuilder.Append(accessModifier);
-                nameBuilder.Append("_");
-            }
-
             if (applyNamespace && @namespace != default)
             {
                 nameBuilder.Append(@namespace);
+                nameBuilder.Append("_");
+            }
+
+            if (accessModifier != null)
+            {
+                nameBuilder.Append(accessModifier);
                 nameBuilder.Append("_");
             }
 

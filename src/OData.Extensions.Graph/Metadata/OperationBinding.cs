@@ -25,16 +25,18 @@ namespace OData.Extensions.Graph.Metadata
         public NameString EntitySet { get; set; }
         public NameString Operation { get; set; }
 
-        private static OperationAccessModifier ParseModifier(string name)
+        private static OperationAccessModifier ParseModifier(string name, bool useNamespace)
         {
             var setNameParts = name.Split("_");
 
-            if (setNameParts.Length < 2)
+            if (setNameParts.Length < 2 || (setNameParts.Length < 3 && useNamespace))
             {
                 return OperationAccessModifier.Unknown;
             }
 
-            switch(setNameParts.First())
+            var namePart = setNameParts[useNamespace ? 1 : 0];
+
+            switch (setNameParts.First())
             {
                 case "pub":
                     return OperationAccessModifier.Public;
@@ -47,16 +49,16 @@ namespace OData.Extensions.Graph.Metadata
             }
         }
 
-        private static NameString ParseNamespace(string name, bool useAccessModifiers)
+        private static NameString ParseNamespace(string name)
         {
             var setNameParts = name.Split("_");
 
-            if (useAccessModifiers && setNameParts.Length < 3)
+            if (setNameParts.Length < 2)
             {
                 return default;
             }
 
-            return setNameParts[useAccessModifiers ? 1 : 0];
+            return setNameParts[0];
         }
 
         private static NameString ParseEntitySetName(string name, bool useNamespaces, bool useAccessModifiers)
@@ -112,7 +114,7 @@ namespace OData.Extensions.Graph.Metadata
             }
         }
 
-        public static OperationBinding Bind(ODataModelBuilder builder, ObjectField objectField, bool useNamespaces = false, bool useAccessModifiers = false)
+        public static OperationBinding Bind(ODataModelBuilder builder, ObjectField objectField, bool useNamespace = false, bool useAccessModifiers = false)
         {
             var binding = new OperationBinding();
             var methodInfo = (objectField.Member ?? objectField.ResolverMember) as MethodInfo;
@@ -136,15 +138,15 @@ namespace OData.Extensions.Graph.Metadata
 
                 if (useAccessModifiers)
                 {
-                    binding.AccessModifier = ParseModifier(objectField.Name);
+                    binding.AccessModifier = ParseModifier(objectField.Name, useNamespace);
                 }
 
-                if (useNamespaces)
+                if (useNamespace)
                 {
-                    binding.Namespace = ParseNamespace(objectField.Name, useAccessModifiers);
+                    binding.Namespace = ParseNamespace(objectField.Name);
                 }
 
-                binding.EntitySet = ParseEntitySetName(objectField.Name, useNamespaces, useAccessModifiers);
+                binding.EntitySet = ParseEntitySetName(objectField.Name, useNamespace, useAccessModifiers);
                 binding.Operation = objectField.Name;
 
                 // This EntitySet shouldn't be exposed

@@ -1,5 +1,4 @@
 # https://gitversion.net/docs/reference/configuration#branch-configuration
-next-version: 0.3
 mode: ContinuousDeployment
 branches:
   release:

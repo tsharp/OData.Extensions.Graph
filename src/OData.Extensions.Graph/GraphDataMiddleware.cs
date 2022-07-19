@@ -57,6 +57,13 @@ namespace OData.Extensions.Graph
 
             try
             {
+                // TODO: Disallow anything but get requests for 0.3.x
+                if (context.Request.Method != HttpMethods.Get)
+                {
+                    context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+                    return;
+                }
+
                 var qt = new QueryTranslator(bindingResolver, model, schemaName);
 
                 if (await HandleRequestAsync(context, parser, qt))
@@ -85,7 +92,6 @@ namespace OData.Extensions.Graph
                 translatedQuery = qt.Translate(parser);
                 var result = await ExecuteGraphQuery(context, translatedQuery.PathSegment, translatedQuery.DocumentNode);
                 await SendResponseObjectAsync(context, result);
-
             }
             catch (ODataException ex)
             {

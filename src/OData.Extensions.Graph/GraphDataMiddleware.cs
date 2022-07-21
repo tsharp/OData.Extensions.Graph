@@ -52,6 +52,7 @@ namespace OData.Extensions.Graph
 
             parser.Settings.MaximumExpansionCount = 5;
             parser.Settings.MaximumExpansionDepth = 2;
+
             parser.Resolver = new ODataUriResolver()
             {
                 EnableCaseInsensitive = true
@@ -91,22 +92,25 @@ namespace OData.Extensions.Graph
 
                 IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
                 OperationBinding operationBinding = bindingResolver.Resolve(entitySet.Name, schemaName);
+                bool allowGeneralFiltering = false;
 
                 switch (context.Request.Method.ToUpperInvariant())
                 {
+                    case "DELETE":
                     case "POST":
                     case "PATCH":
+                        // Custom functions not yet allowed but filtering is not allowed
                         break;
                     // These methods can have id's in their arguments only
                     case "GET":
-                    case "DELETE":                        
+                        allowGeneralFiltering = true;
                         break;
                     default:
                         context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                         return true;
                 }
 
-                operation = translator.Translate(parser, path, entitySet, operationBinding);
+                operation = translator.Translate(parser, path, entitySet, operationBinding, allowGeneralFiltering);
                 var result = await ExecuteGraphQuery(context, operation.PathSegment, operation.DocumentNode);
                 await SendResponseObjectAsync(context, result);
             }

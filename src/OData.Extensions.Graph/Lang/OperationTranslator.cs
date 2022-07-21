@@ -1,5 +1,6 @@
 ﻿using HotChocolate;
 using HotChocolate.Language;
+using Microsoft.OData;
 using Microsoft.OData.Edm;
 using Microsoft.OData.UriParser;
 using OData.Extensions.Graph.Metadata;
@@ -26,7 +27,7 @@ namespace OData.Extensions.Graph.Lang
             this.schemaName = schemaName;
         }
 
-        public TranslatedOperation Translate(string query, params string[] requestArguments)
+        public TranslatedOperation Translate(string query, bool allowFiltering, params string[] requestArguments)
         {
             var parser = new ODataUriParser(model, new Uri($"{query}", UriKind.Relative));
 
@@ -37,7 +38,13 @@ namespace OData.Extensions.Graph.Lang
             IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
             OperationBinding operationBinding = bindingResolver.Resolve(entitySet.Name, schemaName);
 
-            return Translate(parser, path, entitySet, operationBinding, requestArguments);
+            return Translate(
+                parser,
+                path,
+                entitySet,
+                operationBinding,
+                allowFiltering,
+                requestArguments);
         }
 
         public TranslatedOperation Translate(
@@ -45,6 +52,7 @@ namespace OData.Extensions.Graph.Lang
             ODataPath path,
             IEdmEntitySet entitySet,
             OperationBinding operationBinding,
+            bool allowFiltering,
             params string[] requestArguments)
         {
             var operation = new TranslatedOperation();
@@ -56,7 +64,23 @@ namespace OData.Extensions.Graph.Lang
             var skip = parser.ParseSkip();
             var top = parser.ParseTop();
             var count = parser.ParseCount();
+            var orderBy = parser.ParseOrderBy();
+
             var operationName = operationBinding?.Operation ?? entitySet.Name;
+
+            if (!allowFiltering)
+            {
+                var hasFilters = filterClause != null ||
+                    skip != null ||
+                    top != null ||
+                    count != null ||
+                    orderBy != null;
+
+                if(hasFilters)
+                {
+                    throw new ODataException("Filter and ordering operators are not allowed.");
+                }
+            }
 
             if (selectClause == null || !selectClause.SelectedItems.Any())
             {
@@ -77,7 +101,7 @@ namespace OData.Extensions.Graph.Lang
                 hasFiltering = filterClause != null;
             }
 
-            var selectionSetNode = BuildFromSelectExpandClause(entitySet, hasFiltering, count.HasValue && count.Value, selectClause);
+            var selectionSetNode = BuildFromSelectExpandClause(entitySet, false, hasFiltering, count.HasValue && count.Value, selectClause);
 
             var arguments = new List<ArgumentNode>();
             arguments.AddRange(ODataUtility.GetKeyArguments(path));
@@ -146,7 +170,7 @@ namespace OData.Extensions.Graph.Lang
             return operation;
         }
 
-        private SelectionSetNode BuildFromSelectExpandClause(IEdmEntitySet entitySet, bool isFilterable, bool includeCount, SelectExpandClause selectionClause)
+        private SelectionSetNode BuildFromSelectExpandClause(IEdmEntitySet entitySet, bool allowFiltering, bool isFilterable, bool includeCount, SelectExpandClause selectionClause)
         {
             var selections = new List<ISelectionNode>();
 
@@ -182,8 +206,23 @@ namespace OData.Extensions.Graph.Lang
             
                 foreach (var astExpand in expanded)
                 {
+                    if (!allowFiltering)
+                    {
+                        var hasFilters = astExpand.FilterOption != null ||
+                            astExpand.TopOption != null ||
+                            astExpand.SkipOption != null ||
+                            astExpand.CountOption != null ||
+                            astExpand.OrderByOption != null;
+
+                        if (hasFilters)
+                        {
+                            throw new ODataException("Filter and ordering operators are not allowed.");
+                        }
+                    }
+
                     // TODO: Add navigation property filtering and cleanup this implementation a bit
-                    var expandSelections = BuildFromSelectExpandClause(entitySet, false, false, astExpand.SelectAndExpand);
+                    // Any nested filtering or junk is explicitly not allowed.
+                    var expandSelections = BuildFromSelectExpandClause(entitySet, false, false, false, astExpand.SelectAndExpand);
 
                     var selectionName = ODataUtility.GetIdentifierFromSelectedPath(astExpand.PathToNavigationProperty);
                     IEdmProperty edmProperty = EdmUtility.FindEdmProperty(entitySet.EntityType(), selectionName);

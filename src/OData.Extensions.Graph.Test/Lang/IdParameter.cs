@@ -14,7 +14,7 @@ namespace OData.Extensions.Graph.Test.Lang
             Utf8GraphQLParser.Parse(query).ToString(true).MatchSnapshot();
 
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user('abc')?$select=Id");

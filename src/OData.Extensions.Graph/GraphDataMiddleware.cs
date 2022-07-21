@@ -6,12 +6,14 @@ using HotChocolate.Execution.Processing;
 using HotChocolate.Language;
 using Microsoft.AspNetCore.Http;
 using Microsoft.OData;
+using Microsoft.OData.Edm;
 using Microsoft.OData.UriParser;
 using OData.Extensions.Graph.Lang;
 using OData.Extensions.Graph.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -57,16 +59,9 @@ namespace OData.Extensions.Graph
 
             try
             {
-                // TODO: Disallow anything but get requests for 0.3.x
-                if (context.Request.Method != HttpMethods.Get)
-                {
-                    context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
-                    return;
-                }
+                var translator = new OperationTranslator(bindingResolver, model, schemaName);
 
-                var qt = new QueryTranslator(bindingResolver, model, schemaName);
-
-                if (await HandleRequestAsync(context, parser, qt))
+                if (await HandleRequestAsync(context, parser, translator))
                 {
                     return;
                 }
@@ -82,15 +77,38 @@ namespace OData.Extensions.Graph
             await NextAsync(context);
         }
 
-        private async Task<bool> HandleRequestAsync(HttpContext context, ODataUriParser parser, QueryTranslator qt)
+        private async Task<bool> HandleRequestAsync(HttpContext context, ODataUriParser parser, OperationTranslator translator)
         {
-            // Do Conversion Stuff ...
-            TranslatedQuery translatedQuery = null;
+            TranslatedOperation operation = null;
 
             try
             {
-                translatedQuery = qt.Translate(parser);
-                var result = await ExecuteGraphQuery(context, translatedQuery.PathSegment, translatedQuery.DocumentNode);
+                // TODO: 
+                // Parse path and initial segment
+                var model = await modelProvider.GetModelAsync(context.Request);
+                ODataPath path = parser.ParsePath();
+                var pathSegment = ODataUtility.GetIdentifierFromSelectedPath(path);
+
+                IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
+                OperationBinding operationBinding = bindingResolver.Resolve(entitySet.Name, schemaName);
+                string requiredArgument = "";
+
+                switch (context.Request.Method.ToUpperInvariant())
+                {
+                    case "POST":
+                    case "PATCH":
+                        break;
+                    // These methods can have id's in their arguments only
+                    case "GET":
+                    case "DELETE":                        
+                        break;
+                    default:
+                        context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+                        return true;
+                }
+
+                operation = translator.Translate(parser, path, entitySet, operationBinding);
+                var result = await ExecuteGraphQuery(context, operation.PathSegment, operation.DocumentNode);
                 await SendResponseObjectAsync(context, result);
             }
             catch (ODataException ex)
@@ -110,10 +128,10 @@ namespace OData.Extensions.Graph
                 };
 
 #if DEBUG
-                if (translatedQuery != null)
+                if (operation != null)
                 {
-                    result.Add("debug_commandText", translatedQuery.DocumentNode.ToString(true));
-                    result.Add("debug_pathSegment", translatedQuery.PathSegment);
+                    result.Add("debug_commandText", operation.DocumentNode.ToString(true));
+                    result.Add("debug_pathSegment", operation.PathSegment);
                 }
 #endif
 
@@ -136,10 +154,10 @@ namespace OData.Extensions.Graph
                 };
 
 #if DEBUG
-                if (translatedQuery != null)
+                if (operation != null)
                 {
-                    result.Add("debug_commandText", translatedQuery.DocumentNode.ToString(true));
-                    result.Add("debug_pathSegment", translatedQuery.PathSegment);
+                    result.Add("debug_commandText", operation.DocumentNode.ToString(true));
+                    result.Add("debug_pathSegment", operation.PathSegment);
                 }
 #endif
 

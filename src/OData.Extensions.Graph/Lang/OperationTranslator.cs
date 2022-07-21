@@ -10,13 +10,13 @@ using System.Text.Json;
 
 namespace OData.Extensions.Graph.Lang
 {
-    public class QueryTranslator
+    public class OperationTranslator
     {
         private readonly IEdmModel model;
         private readonly IBindingResolver bindingResolver;
         private readonly NameString schemaName;
 
-        public QueryTranslator(
+        public OperationTranslator(
             IBindingResolver bindingResolver, 
             IEdmModel model,
             NameString schemaName = default)
@@ -26,23 +26,30 @@ namespace OData.Extensions.Graph.Lang
             this.schemaName = schemaName;
         }
 
-        public TranslatedQuery Translate(string query)
+        public TranslatedOperation Translate(string query, params string[] requestArguments)
         {
-            return Translate(new ODataUriParser(model, new Uri($"{query}", UriKind.Relative)));
-        }
+            var parser = new ODataUriParser(model, new Uri($"{query}", UriKind.Relative));
 
-        public TranslatedQuery Translate(ODataUriParser parser)
-        {
-            var query = new TranslatedQuery();
-
-            // Identifier
+            // Parse path and initial segment
             ODataPath path = parser.ParsePath();
-
             var pathSegment = ODataUtility.GetIdentifierFromSelectedPath(path);
-            query.PathSegment = pathSegment;
 
             IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
             OperationBinding operationBinding = bindingResolver.Resolve(entitySet.Name, schemaName);
+
+            return Translate(parser, path, entitySet, operationBinding, requestArguments);
+        }
+
+        public TranslatedOperation Translate(
+            ODataUriParser parser,
+            ODataPath path,
+            IEdmEntitySet entitySet,
+            OperationBinding operationBinding,
+            params string[] requestArguments)
+        {
+            var operation = new TranslatedOperation();
+
+            
 
             // Handle select
             var selectClause = parser.ParseSelectAndExpand(); //parse $select, $expand
@@ -111,6 +118,12 @@ namespace OData.Extensions.Graph.Lang
                 arguments.Add(new ArgumentNode("take", new IntValueNode(top.Value)));
             }
 
+            // Add arguments from the body
+            foreach(var argument in requestArguments)
+            {
+                arguments.Add(new ArgumentNode(argument, new VariableNode(argument)));
+            }
+
             var querySelectionSet = new SelectionSetNode(new ISelectionNode[] {
                 new FieldNode(
                     null,
@@ -129,9 +142,9 @@ namespace OData.Extensions.Graph.Lang
                new DirectiveNode[] { },
                querySelectionSet);
 
-            query.DocumentNode = new DocumentNode(new IDefinitionNode[] { queryOp });
+            operation.DocumentNode = new DocumentNode(new IDefinitionNode[] { queryOp });
 
-            return query;
+            return operation;
         }
 
         private SelectionSetNode BuildFromSelectExpandClause(IEdmEntitySet entitySet, bool isFilterable, bool includeCount, SelectExpandClause selectionClause)

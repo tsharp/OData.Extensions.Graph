@@ -11,7 +11,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void EqEnum()
         {
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Status&$filter=Status eq 'Undefined'");
@@ -24,7 +24,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void EqString()
         {
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id eq '1234'");
@@ -37,7 +37,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void EqDate()
         {
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$filter=CreatedOn eq 2022-01-07");
@@ -50,7 +50,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void EqInt()
         {
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$filter=Age eq 100");
@@ -63,7 +63,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void EqDouble()
         {
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$filter=Longitude eq 1.0");
@@ -76,7 +76,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void EqBool()
         {
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$filter=IsActive eq true");
@@ -89,7 +89,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void EqNull()
         {
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id eq null");

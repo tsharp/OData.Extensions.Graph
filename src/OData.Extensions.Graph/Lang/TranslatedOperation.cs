@@ -2,7 +2,7 @@
 
 namespace OData.Extensions.Graph.Lang
 {
-    public class TranslatedQuery
+    public class TranslatedOperation
     {
         public DocumentNode DocumentNode { get; set; }
 

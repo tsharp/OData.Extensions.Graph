@@ -48,8 +48,7 @@ namespace OData.Extensions.Graph.Lang
             params string[] requestArguments)
         {
             var operation = new TranslatedOperation();
-
-            
+            operation.PathSegment = entitySet.Name;
 
             // Handle select
             var selectClause = parser.ParseSelectAndExpand(); //parse $select, $expand

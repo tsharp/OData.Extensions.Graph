@@ -91,7 +91,6 @@ namespace OData.Extensions.Graph
 
                 IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
                 OperationBinding operationBinding = bindingResolver.Resolve(entitySet.Name, schemaName);
-                string requiredArgument = "";
 
                 switch (context.Request.Method.ToUpperInvariant())
                 {

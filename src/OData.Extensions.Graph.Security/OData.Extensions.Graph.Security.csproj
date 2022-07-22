@@ -8,4 +8,8 @@
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="OData.Extensions.Graph.Test" />
+	</ItemGroup>
+
 </Project>

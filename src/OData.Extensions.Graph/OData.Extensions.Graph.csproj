@@ -22,4 +22,8 @@
 	  <ProjectReference Include="..\OData.Extensions.Graph.Security\OData.Extensions.Graph.Security.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="OData.Extensions.Graph.Test" />
+	</ItemGroup>
+
 </Project>

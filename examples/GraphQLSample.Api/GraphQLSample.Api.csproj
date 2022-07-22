@@ -39,4 +39,8 @@
 		<ProjectReference Include="..\GraphQLSample.Api.Dto\GraphQLSample.Api.Dto.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="OData.Extensions.Graph.Test" />
+	</ItemGroup>
+
 </Project>

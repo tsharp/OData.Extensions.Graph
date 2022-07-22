@@ -27,7 +27,7 @@ namespace OData.Extensions.Graph.Metadata
 
         private static OperationAccessModifier ParseModifier(string name, bool useNamespace)
         {
-            var setNameParts = name.Split("_");
+            var setNameParts = name.Split("_", StringSplitOptions.RemoveEmptyEntries);
 
             if (setNameParts.Length < 2 || (setNameParts.Length < 3 && useNamespace))
             {
@@ -63,7 +63,7 @@ namespace OData.Extensions.Graph.Metadata
 
         private static NameString ParseEntitySetName(string name, bool useNamespaces, bool useAccessModifiers)
         {
-            var setNameParts = name.Split("_");
+            var setNameParts = name.Split("_", StringSplitOptions.RemoveEmptyEntries);
             var skip = 0;
 
             if (useNamespaces)

@@ -2,6 +2,7 @@
 using HotChocolate.Types;
 using HotChocolate.Types.Descriptors;
 using OData.Extensions.Graph.Annotations;
+using OData.Extensions.Graph.Security;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;

@@ -24,6 +24,7 @@
 
 	<ItemGroup>
 		<InternalsVisibleTo Include="OData.Extensions.Graph.Test" />
+		<InternalsVisibleTo Include="GraphQLSample.Api.Test" />
 	</ItemGroup>
 
 </Project>

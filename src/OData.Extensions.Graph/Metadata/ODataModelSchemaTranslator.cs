@@ -119,7 +119,7 @@ namespace OData.Extensions.Graph.Metadata
                 .Where(t =>
                     t.IsNamedType() &&
                     t.IsObjectType() &&
-                    !t.Name.Value.StartsWith("__") &&
+                    !t.Name.Value.StartsWith("_") &&
                     t.Name != schema.MutationType?.Name &&
                     t.Name != schema.QueryType?.Name))
             {
@@ -194,54 +194,65 @@ namespace OData.Extensions.Graph.Metadata
                     // unresolved.Item1.AddStructuralProperty(unresolved.Item2.Name.Value, EdmPrimitiveTypeKind.None);
                 }
             }
-            
-            // Now parse out and resolve entity sets
-            foreach (var objectType in schema.QueryType.Fields
-                .Where(f =>
-                    f.Name.HasValue &&
-                    !f.Name.Value.StartsWith("_") &&
-                    f.Member == null && f.ResolverMember == null))
+
+            if (schema.QueryType != null)
             {
-                var resolvedEntity = model.FindType($"{remoteNamespace}.{objectType.Type.TypeName()}") as IEdmEntityType;
-
-                if (resolvedEntity == null)
+                // Now parse out and resolve entity sets
+                foreach (var objectType in schema.QueryType.Fields
+                    .Where(f =>
+                        f.Name.HasValue &&
+                        !f.Name.Value.StartsWith("_") &&
+                        f.Member == null && f.ResolverMember == null))
                 {
-                    continue;
-                }
+                    var resolvedEntity = model.FindType($"{remoteNamespace}.{objectType.Type.TypeName()}") as IEdmEntityType;
 
-                if (objectType.RuntimeType.IsCollectionType() && 
-                    objectType.Name.Value.IsPluralOf(resolvedEntity.Name))
-                {
-                    container.AddEntitySet(objectType.Name, resolvedEntity);
-                    continue;
-                }
+                    if (resolvedEntity == null)
+                    {
+                        continue;
+                    }
 
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"Unable to Map Entity Endpoint: {objectType.Name}");
-                Console.ForegroundColor = ConsoleColor.White;
+                    if (objectType.RuntimeType.IsCollectionType() &&
+                        objectType.Name.Value.IsPluralOf(resolvedEntity.Name))
+                    {
+                        container.AddEntitySet(objectType.Name, resolvedEntity);
+                        continue;
+                    }
+
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"Unable to Map Entity Endpoint: {objectType.Name}");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
             }
 
             // Add mutations!
-            foreach(var objectType in schema.MutationType.Fields.Where(f =>
-                    f.Name.HasValue &&
-                    !f.Name.Value.StartsWith("_") &&
-                    f.Member == null && f.ResolverMember == null))
+            if (schema.MutationType != null)
             {
-                var resolved = model.GetEntitySetOrNull($"{remoteNamespace}.{objectType.Type.TypeName()}", true);
-
-                if (resolved == null)
+                foreach (var objectType in schema.MutationType.Fields.Where(f =>
+                         f.Name.HasValue &&
+                         !f.Name.Value.StartsWith("_") &&
+                         f.Member == null && f.ResolverMember == null))
                 {
-                    continue;
+                    var resolved = model.GetEntitySetOrNull($"{remoteNamespace}.{objectType.Type.TypeName()}", true);
+
+                    if (resolved == null)
+                    {
+                        continue;
+                    }
+
+                    // Is General Mutation?
+                    if (objectType.Name.Value.StartsWith("Delete", StringComparison.InvariantCultureIgnoreCase) ||
+                        objectType.Name.Value.StartsWith("Update", StringComparison.InvariantCultureIgnoreCase) ||
+                        objectType.Name.Value.StartsWith("Create", StringComparison.InvariantCultureIgnoreCase))
+                    {
+
+                    }
+
+
                 }
+            }
 
-                // Is General Mutation?
-                if (objectType.Name.Value.StartsWith("Delete", StringComparison.InvariantCultureIgnoreCase) ||
-                    objectType.Name.Value.StartsWith("Update", StringComparison.InvariantCultureIgnoreCase) ||
-                    objectType.Name.Value.StartsWith("Create", StringComparison.InvariantCultureIgnoreCase))
-                {
-
-                }
-
+            if(schema.SubscriptionType != null)
+            {
 
             }
 
@@ -254,7 +265,7 @@ namespace OData.Extensions.Graph.Metadata
             foreach (var objectType in schema.Types.Where(t =>
                     t.Kind == TypeKind.Object &&
                     t.Name.HasValue &&
-                    !t.Name.Value.StartsWith("__") &&
+                    !t.Name.Value.StartsWith("_") &&
                     t.GetType().GenericTypeArguments.Any()).Cast<ObjectType>())
             {
                 // No
@@ -270,7 +281,7 @@ namespace OData.Extensions.Graph.Metadata
             foreach (var objectField in schema.QueryType.Fields
                 .Where(f =>
                     f.Name.HasValue &&
-                    !f.Name.Value.StartsWith("__") &&
+                    !f.Name.Value.StartsWith("_") &&
                     (f.Member != null || f.ResolverMember != null)))
             {
                 var binding = OperationBinding.Bind(builder, objectField, true, true);

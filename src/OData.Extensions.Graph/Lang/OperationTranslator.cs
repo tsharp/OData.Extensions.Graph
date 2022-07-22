@@ -38,7 +38,7 @@ namespace OData.Extensions.Graph.Lang
             IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
             OperationBinding operationBinding = bindingResolver.Resolve(entitySet.Name, schemaName);
 
-            return Translate(
+            return TranslateQuery(
                 parser,
                 path,
                 entitySet,
@@ -47,7 +47,7 @@ namespace OData.Extensions.Graph.Lang
                 requestArguments);
         }
 
-        public TranslatedOperation Translate(
+        public TranslatedOperation TranslateQuery(
             ODataUriParser parser,
             ODataPath path,
             IEdmEntitySet entitySet,
@@ -112,7 +112,7 @@ namespace OData.Extensions.Graph.Lang
 
                 if (paramClean.StartsWith("{") && paramClean.EndsWith("}"))
                 {
-                    var obj = JsonSerializer.Deserialize<Dictionary<string, object>>(paramClean, Constants.Serialization.Options);
+                    var obj = JsonSerializer.Deserialize<Dictionary<string, object>>(paramClean, Constants.Serialization.Reading);
 
                     // TODO: Better parsing?
                     var fields = obj.Select(field => new ObjectFieldNode(field.Key, field.Value.ToString())).ToArray();

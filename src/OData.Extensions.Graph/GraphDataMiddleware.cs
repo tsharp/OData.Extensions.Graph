@@ -59,19 +59,11 @@ namespace OData.Extensions.Graph
                 EnableCaseInsensitive = true
             };
 
-            try
-            {
-                var translator = new OperationTranslator(bindingResolver, model, schemaName);
+            var translator = new OperationTranslator(bindingResolver, model, schemaName);
 
-                if (await HandleRequestAsync(context, parser, translator))
-                {
-                    return;
-                }
-            }
-            catch (ODataUnrecognizedPathException)
+            if (await HandleRequestAsync(context, parser, translator))
             {
-                // This is an invalid odata path based on the current configuration
-                // Move along and continue processing the request stream ...
+                return;
             }
 
             // if the request is not a get request or if the content type is not correct
@@ -111,9 +103,15 @@ namespace OData.Extensions.Graph
                         return true;
                 }
 
-                operation = translator.Translate(parser, path, entitySet, operationBinding, allowGeneralFiltering);
+                operation = translator.TranslateQuery(parser, path, entitySet, operationBinding, allowGeneralFiltering);
                 var result = await ExecuteGraphQuery(context, operation.PathSegment, operation.DocumentNode);
                 await SendResponseObjectAsync(context, result);
+            }
+            catch (ODataUnrecognizedPathException)
+            {
+                // This is an invalid odata path based on the current configuration
+                // Move along and continue processing the request stream ...
+                return false;
             }
             catch (ODataException ex)
             {
@@ -180,13 +178,8 @@ namespace OData.Extensions.Graph
                 context.Response.Body,
                 data,
                 typeof(object),
-                Constants.Serialization.Options,
+                Constants.Serialization.Reading,
                 context.RequestAborted);
-        }
-
-        private Task<object> ExecuteGraphQuery(HttpContext context, string entitySet, string query)
-        {
-            return ExecuteGraphQuery(context, entitySet, Utf8GraphQLParser.Parse(query));
         }
 
         private async Task<object> ExecuteGraphQuery(HttpContext context, string entitySet, DocumentNode document)

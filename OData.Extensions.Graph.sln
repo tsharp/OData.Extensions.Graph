@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31529.145
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GraphQLSample.Api", "examples\GraphQLSample.Api\GraphQLSample.Api.csproj", "{7CED0EAF-3197-4979-B69A-40D050F7FD1A}"
 EndProject
@@ -14,6 +14,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OData.Extensions.Graph.Security", "src\OData.Extensions.Graph.Security\OData.Extensions.Graph.Security.csproj", "{9C7ADB36-5A27-4AD2-8B41-2EA5C3EDDB3A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OData.Extensions.Graph.Test", "src\OData.Extensions.Graph.Test\OData.Extensions.Graph.Test.csproj", "{271BC9B0-5312-403E-940A-D3BA34F2E38D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GraphQLSample.Api.Test", "examples\GraphQLSample.Api.Test\GraphQLSample.Api.Test.csproj", "{079A010F-C0D9-4F08-A41D-730F7D54F856}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +43,10 @@ Global
 		{271BC9B0-5312-403E-940A-D3BA34F2E38D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{271BC9B0-5312-403E-940A-D3BA34F2E38D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{271BC9B0-5312-403E-940A-D3BA34F2E38D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{079A010F-C0D9-4F08-A41D-730F7D54F856}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{079A010F-C0D9-4F08-A41D-730F7D54F856}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{079A010F-C0D9-4F08-A41D-730F7D54F856}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{079A010F-C0D9-4F08-A41D-730F7D54F856}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -48,6 +54,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{7CED0EAF-3197-4979-B69A-40D050F7FD1A} = {EACE4370-D8DE-4F89-BEE0-DC18948B2862}
 		{A1C8A62D-8982-411B-B67C-6D7F74A35AD4} = {EACE4370-D8DE-4F89-BEE0-DC18948B2862}
+		{079A010F-C0D9-4F08-A41D-730F7D54F856} = {EACE4370-D8DE-4F89-BEE0-DC18948B2862}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {26F37564-A11A-4A1A-AD4F-6271EDEF0C0B}

@@ -3,16 +3,16 @@ using System.Net;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace OData.Extensions.Graph.Test.Api
+namespace GraphQLSample.Api.Test
 {
     /// <summary>
     /// https://docs.microsoft.com/en-us/aspnet/core/test/integration-tests?view=aspnetcore-6.0
     /// </summary>
-    public class BasicApiTests : IClassFixture<WebApplicationFactory<GraphQLSample.Api.Startup>>
+    public class BasicApiTests : IClassFixture<WebApplicationFactory<Startup>>
     {
-        private readonly WebApplicationFactory<GraphQLSample.Api.Startup> factory;
+        private readonly WebApplicationFactory<Startup> factory;
 
-        public BasicApiTests(WebApplicationFactory<GraphQLSample.Api.Startup> factory)
+        public BasicApiTests(WebApplicationFactory<Startup> factory)
         {
             this.factory = factory;
         }

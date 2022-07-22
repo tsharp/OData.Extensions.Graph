@@ -278,7 +278,7 @@ namespace OData.Extensions.Graph
 
                     if(resultData != null && resultData.GetType().IsArray)
                     {
-                        response.Add("values", resultData);
+                        response.Add("value", resultData);
                     }
                     else if(resultData != null)
                     {
@@ -291,7 +291,7 @@ namespace OData.Extensions.Graph
 
                             if(item.Key == "items")
                             {
-                                key = "values";
+                                key = "value";
                             }
 
                             response.Add(key, item.Value);

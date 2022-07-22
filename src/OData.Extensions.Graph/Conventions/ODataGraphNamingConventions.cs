@@ -20,6 +20,11 @@ namespace OData.Extensions.Graph.Conventions
 
         public override NameString GetMemberName(MemberInfo member, MemberKind kind)
         {
+            if(kind != MemberKind.ObjectField)
+            {
+                return base.GetMemberName(member, kind);
+            }
+
             var accessModifier = member.GetCustomAttribute<AccessModifierAttribute>();
             var applyNamespace = member.DeclaringType.GetCustomAttribute<ApplyServiceNamespaceAttribute>() != null;
             var @namespace = serviceNamespaceProvider.ServiceName;

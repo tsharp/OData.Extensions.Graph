@@ -121,7 +121,7 @@ namespace OData.Extensions.Graph
                         return true;
                 }
 
-                var result = await ExecuteGraphQuery(context, operation.PathSegment, operation.DocumentNode);
+                var result = await ExecuteGraphQuery(context, operationBinding, operation.PathSegment, operation.DocumentNode);
                 await SendResponseObjectAsync(context, result);
             }
             catch (ODataUnrecognizedPathException)
@@ -199,7 +199,7 @@ namespace OData.Extensions.Graph
                 context.RequestAborted);
         }
 
-        private async Task<object> ExecuteGraphQuery(HttpContext context, string entitySet, DocumentNode document, IDictionary<string, object> variables = null)
+        private async Task<object> ExecuteGraphQuery(HttpContext context, OperationBinding binding, string entitySet, DocumentNode document, IDictionary<string, object> variables = null)
         {
             var response = new Dictionary<string, object>()
             {
@@ -237,10 +237,12 @@ namespace OData.Extensions.Graph
                     context.Response.StatusCode = 500;
 
 #if DEBUG
+                    response.Add("@odata.debug_pathSegment", entitySet);
+                    response.Add("@odata.debug_operation", binding.Operation);
+                    
                     if (document != null)
                     {
-                        response.Add("debug_commandText", document.ToString(true));
-                        response.Add("debug_pathSegment", entitySet);
+                        response.Add("@odata.debug_commandText", document.ToString(true));
                     }
 #endif
 
@@ -264,13 +266,12 @@ namespace OData.Extensions.Graph
 
                 if (queryResult != null)
                 {
-                    var operation = bindingResolver.ResolveQuery(entitySet, schemaName);
-
+                    // TODO: Use model to resolve metadata
                     // TODO: Fixme, add operation bindings for remote schemas too.
                     response.Add("@odata.context", $"https://some.random-api.com/api/$metadata#{entitySet}");
 
                     // WARN: This may be a ResultMapList
-                    var queryResultData = queryResult.Data[operation?.Operation ?? entitySet];
+                    var queryResultData = queryResult.Data[binding?.Operation ?? entitySet];
                     
                     // TODO: Parse
                     var resultData = ParseResults(queryResultData);

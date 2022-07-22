@@ -8,8 +8,6 @@ namespace OData.Extensions.Graph.Test
 {
     public class DebugBindingResolver : IBindingResolver
     {
-        private readonly ITypeInspector typeInspector = new DefaultTypeInspector();
-
         public static IBindingResolver Instance => new DebugBindingResolver();
 
         public DebugBindingResolver()
@@ -20,7 +18,12 @@ namespace OData.Extensions.Graph.Test
         {
         }
 
-        public OperationBinding Resolve(NameString entitySet, NameString schemaName = default)
+        public OperationBinding ResolveQuery(NameString entitySet, NameString schemaName = default)
+        {
+            return null;
+        }
+
+        public OperationBinding ResolveMutation(string method, NameString entitySet, NameString schemaName = default)
         {
             return null;
         }

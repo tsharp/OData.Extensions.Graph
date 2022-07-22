@@ -227,27 +227,38 @@ namespace OData.Extensions.Graph.Metadata
             // Add mutations!
             if (schema.MutationType != null)
             {
-                foreach (var objectType in schema.MutationType.Fields.Where(f =>
+                foreach (var objectField in schema.MutationType.Fields.Where(f =>
                          f.Name.HasValue &&
-                         !f.Name.Value.StartsWith("_") &&
-                         f.Member == null && f.ResolverMember == null))
+                         !f.Name.Value.StartsWith("_")))
                 {
-                    var resolved = model.GetEntitySetOrNull($"{remoteNamespace}.{objectType.Type.TypeName()}", true);
+                    var name = $"{remoteNamespace}.{objectField.Type.TypeName()}";
+                    var resolved = model.GetEntitySetOrNull(name, true);
+
+                    if (resolved == null)
+                    {
+                        resolved = localModel.GetEntitySetOrNull(name, true);
+                    }
 
                     if (resolved == null)
                     {
                         continue;
                     }
 
+                    var binding = OperationBinding.Bind(objectField, resolved, true, true);
+
                     // Is General Mutation?
-                    if (objectType.Name.Value.StartsWith("Delete", StringComparison.InvariantCultureIgnoreCase) ||
-                        objectType.Name.Value.StartsWith("Update", StringComparison.InvariantCultureIgnoreCase) ||
-                        objectType.Name.Value.StartsWith("Create", StringComparison.InvariantCultureIgnoreCase))
+                    if (binding.EntitySet.Value.StartsWith("Delete", StringComparison.InvariantCultureIgnoreCase) ||
+                        binding.EntitySet.Value.StartsWith("Remove", StringComparison.InvariantCultureIgnoreCase) ||
+                        binding.EntitySet.Value.StartsWith("Update", StringComparison.InvariantCultureIgnoreCase) ||
+                        binding.EntitySet.Value.StartsWith("Set", StringComparison.InvariantCultureIgnoreCase) ||
+                        binding.EntitySet.Value.StartsWith("Create", StringComparison.InvariantCultureIgnoreCase) ||
+                        binding.EntitySet.Value.StartsWith("New", StringComparison.InvariantCultureIgnoreCase))
                     {
-
+                        if (binding != null)
+                        {
+                            bindingResolver.Register(binding, schemaName);
+                        }
                     }
-
-
                 }
             }
 

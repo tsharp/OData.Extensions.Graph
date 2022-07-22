@@ -37,7 +37,7 @@ namespace OData.Extensions.Graph.Lang
             var pathSegment = ODataUtility.GetIdentifierFromSelectedPath(path);
 
             IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
-            OperationBinding operationBinding = bindingResolver.Resolve(entitySet.Name, schemaName);
+            OperationBinding operationBinding = bindingResolver.ResolveQuery(entitySet.Name, schemaName);
 
             return TranslateQuery(
                 parser,
@@ -62,7 +62,7 @@ namespace OData.Extensions.Graph.Lang
                 true,
                 requestArguments);
 
-        public TranslatedOperation TranslateMutation(string query, params string[] requestArguments)
+        public TranslatedOperation TranslateMutation(string query, params string[] requestVariables)
         {
             var parser = new ODataUriParser(model, new Uri($"{query}", UriKind.Relative));
 
@@ -71,14 +71,14 @@ namespace OData.Extensions.Graph.Lang
             var pathSegment = ODataUtility.GetIdentifierFromSelectedPath(path);
 
             IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
-            OperationBinding operationBinding = bindingResolver.Resolve(entitySet.Name, schemaName);
+            OperationBinding operationBinding = bindingResolver.ResolveQuery(entitySet.Name, schemaName);
 
             return TranslateMutation(
                 parser,
                 path,
                 entitySet,
                 operationBinding,
-                requestArguments);
+                requestVariables);
         }
 
         public TranslatedOperation TranslateMutation(
@@ -86,7 +86,7 @@ namespace OData.Extensions.Graph.Lang
             ODataPath path,
             IEdmEntitySet entitySet,
             OperationBinding operationBinding,
-            params string[] requestArguments)
+            params string[] requestVariables)
             => Translate(
                 OperationType.Mutation,
                 parser,
@@ -94,7 +94,7 @@ namespace OData.Extensions.Graph.Lang
                 entitySet,
                 operationBinding,
                 false,
-                requestArguments);
+                requestVariables);
 
         private TranslatedOperation Translate(
             OperationType operationType,
@@ -222,7 +222,7 @@ namespace OData.Extensions.Graph.Lang
                null,
                requestVariables != null && requestVariables.Any() ? new NameNode(entitySet.Name) : default,
                operationType,
-               new VariableDefinitionNode[] { },
+               variables.ToArray(),
                new DirectiveNode[] { },
                querySelectionSet);
 

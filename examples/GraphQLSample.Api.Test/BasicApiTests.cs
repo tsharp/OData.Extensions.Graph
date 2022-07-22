@@ -49,7 +49,7 @@ namespace GraphQLSample.Api.Test
             var client = factory.CreateClient();
             var data = new Dictionary<string, object>()
             {
-
+                ["name"] = "Bob"
             };
 
             var json = JsonSerializer.Serialize(data, OData.Extensions.Graph.Constants.Serialization.Reading);

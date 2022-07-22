@@ -1,5 +1,6 @@
 ﻿using HotChocolate;
 using HotChocolate.Types;
+using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
 using OData.Extensions.Graph.Security;
 using System;
@@ -112,6 +113,41 @@ namespace OData.Extensions.Graph.Metadata
 
                 entityType.RemoveProperty(property);
             }
+        }
+
+        public static OperationBinding Bind(ObjectField objectField, IEdmEntitySet entitySet, bool useNamespace = false, bool useAccessModifiers = false)
+        {
+            var binding = new OperationBinding();
+            var methodInfo = (objectField.Member ?? objectField.ResolverMember) as MethodInfo;
+            var returnType = methodInfo.ReturnType;
+
+            binding.Arguments.AddRange(objectField.Arguments.ToArray());
+            //binding.CanPage = binding.Arguments.Any(arg => arg.Name == "skip");
+            //binding.CanFilter = binding.Arguments.Any(arg => arg.Name == "where");
+            //binding.CanSort = binding.Arguments.Any(arg => arg.Name == "order");
+            binding.CanSelectSingle = binding.Arguments.Any(arg => arg.Name == "id" || arg.Name == "key");
+
+            if (!useAccessModifiers)
+            {
+                binding.AccessModifier = OperationAccessModifier.Public;
+            }
+
+            binding.IsSet = false;
+
+            if (useAccessModifiers)
+            {
+                binding.AccessModifier = ParseModifier(objectField.Name, useNamespace);
+            }
+
+            if (useNamespace)
+            {
+                binding.Namespace = ParseNamespace(objectField.Name);
+            }
+
+            binding.EntitySet = ParseEntitySetName(objectField.Name, useNamespace, useAccessModifiers);
+            binding.Operation = objectField.Name;
+
+            return binding;
         }
 
         public static OperationBinding Bind(ODataModelBuilder builder, ObjectField objectField, bool useNamespace = false, bool useAccessModifiers = false)

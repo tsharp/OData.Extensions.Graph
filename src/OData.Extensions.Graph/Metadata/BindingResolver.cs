@@ -8,6 +8,14 @@ namespace OData.Extensions.Graph.Metadata
 {
     internal class BindingResolver : IBindingResolver
     {
+        private static IDictionary<string, string[]> httpMethodPrefixes = new Dictionary<string, string[]>()
+        {
+            ["GET"] = new [] { "", "all" },
+            ["POST"] = new[] { "", "create", "set", "change" },
+            ["PATCH"] = new [] { "update", "set", "change" },
+            ["DELETE"] = new [] { "delete", "remove" }
+        };
+
         private readonly IDictionary<string, List<OperationBinding>> dynamicSchemaBindings = new ConcurrentDictionary<string, List<OperationBinding>>();
         private readonly ConcurrentBag<OperationBinding> defaultSchemaBindings = new ConcurrentBag<OperationBinding>();
         
@@ -49,7 +57,35 @@ namespace OData.Extensions.Graph.Metadata
             #endregion
         }
 
-        public OperationBinding Resolve(NameString entitySet, NameString schemaName = default)
+        // NOTE: These resolvers will be very expensive for large scale applications. This should be fixed such that
+        // there should be no dynamic lookups - it should be a static binding and a report of the bindings should be
+        // given. It should also be noted that a binding override option should be given in the event that the best
+        // effort translation picks the wrong mutations - which would allow the selection of a more appropriate mutation
+        // for things like entity sets, updates, creates, etc.
+        public OperationBinding ResolveMutation(string method, NameString entitySet, NameString schemaName = default)
+        {
+            if(!httpMethodPrefixes.ContainsKey(method))
+            {
+                throw new InvalidOperationException($"Unsupported Method! `{method}`");
+            }
+
+            var prefixes = httpMethodPrefixes[method];
+
+            foreach(var prefix in prefixes)
+            {
+                var operationName = $"{prefix}{entitySet}".RemovePluralization();
+                var resolved = ResolveQuery(operationName, schemaName);
+
+                if(resolved != null)
+                {
+                    return resolved;
+                }
+            }
+
+            return null;
+        }
+
+        public OperationBinding ResolveQuery(NameString entitySet, NameString schemaName = default)
         {
             if (schemaName == null)
             {
@@ -58,7 +94,7 @@ namespace OData.Extensions.Graph.Metadata
 
             if(schemaName == default)
             {
-                return dynamicSchemaBindings[schemaName].Where(b => b.EntitySet == entitySet).FirstOrDefault();
+                return defaultSchemaBindings.Where(b => b.EntitySet.Value.Equals(entitySet, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             }
 
 
@@ -67,7 +103,7 @@ namespace OData.Extensions.Graph.Metadata
                 return null;
             }
 
-            return dynamicSchemaBindings[schemaName].Where(b => b.EntitySet == entitySet).FirstOrDefault();
+            return dynamicSchemaBindings[schemaName].Where(b => b.EntitySet.Value.Equals(entitySet, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
         }
     }
 }

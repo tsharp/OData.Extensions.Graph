@@ -13,6 +13,7 @@ using OData.Extensions.Graph.Lang;
 using OData.Extensions.Graph.Metadata;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.Json;
@@ -74,6 +75,7 @@ namespace OData.Extensions.Graph
         private async Task<bool> HandleRequestAsync(HttpContext context, ODataUriParser parser, OperationTranslator translator)
         {
             TranslatedOperation operation = null;
+            IDictionary<string, object> variables = null;
 
             try
             {
@@ -84,24 +86,41 @@ namespace OData.Extensions.Graph
                 var pathSegment = ODataUtility.GetIdentifierFromSelectedPath(path);
 
                 IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
-                OperationBinding operationBinding = bindingResolver.Resolve(entitySet.Name, schemaName);
+                OperationBinding operationBinding = null;
 
                 switch (context.Request.Method.ToUpperInvariant())
                 {
-                    case "DELETE":
                     case "POST":
                     case "PATCH":
-                        // Custom functions not yet allowed but filtering is not allowed
+                        if(!context.Request.HasJsonContentType())
+                        {
+                            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                            await context.Response.WriteAsync($"`{context.Request.ContentType}` Content-Type is not supported");
+                            return true;
+                        }
+
+                        context.Request.EnableBuffering();
+                        context.Request.Body.Position = 0;
+
+                        variables = await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(context.Request.Body, Constants.Serialization.Reading);
+                        
+                        operationBinding = bindingResolver.ResolveMutation(context.Request.Method, entitySet.Name, schemaName);
+                        operation = translator.TranslateMutation(parser, path, entitySet, operationBinding, variables?.Keys?.ToArray());
+                        break;
+                    case "DELETE":
+                        operationBinding = bindingResolver.ResolveMutation(context.Request.Method, entitySet.Name, schemaName);
+                        operation = translator.TranslateMutation(parser, path, entitySet, operationBinding);
                         break;
                     // These methods can have id's in their arguments only
                     case "GET":
+                        operationBinding = bindingResolver.ResolveQuery(entitySet.Name, schemaName);
+                        operation = translator.TranslateQuery(parser, path, entitySet, operationBinding);
                         break;
                     default:
                         context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                         return true;
                 }
 
-                operation = translator.TranslateQuery(parser, path, entitySet, operationBinding);
                 var result = await ExecuteGraphQuery(context, operation.PathSegment, operation.DocumentNode);
                 await SendResponseObjectAsync(context, result);
             }
@@ -180,7 +199,7 @@ namespace OData.Extensions.Graph
                 context.RequestAborted);
         }
 
-        private async Task<object> ExecuteGraphQuery(HttpContext context, string entitySet, DocumentNode document)
+        private async Task<object> ExecuteGraphQuery(HttpContext context, string entitySet, DocumentNode document, IDictionary<string, object> variables = null)
         {
             var response = new Dictionary<string, object>()
             {
@@ -192,10 +211,18 @@ namespace OData.Extensions.Graph
             try
             {
                 var requestExecutor = await GetExecutorAsync(context.RequestAborted);
-
+                
                 var request = QueryRequestBuilder.New();
                 request.SetQuery(document);
 
+                if(variables != null)
+                {
+                    foreach(var variable in variables)
+                    {
+                        request.AddVariableValue(variable.Key, variable.Value);
+                    }
+                }
+                
                 var result = await requestExecutor.ExecuteAsync(request.Create());
 
                 if (result.Errors?.Any() == true)
@@ -237,7 +264,7 @@ namespace OData.Extensions.Graph
 
                 if (queryResult != null)
                 {
-                    var operation = bindingResolver.Resolve(entitySet, schemaName);
+                    var operation = bindingResolver.ResolveQuery(entitySet, schemaName);
 
                     // TODO: Fixme, add operation bindings for remote schemas too.
                     response.Add("@odata.context", $"https://some.random-api.com/api/$metadata#{entitySet}");

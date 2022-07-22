@@ -11,7 +11,7 @@ namespace OData.Extensions.Graph.Metadata
     {
         private static string[] pluralizations = new[] {
             "s",
-            "ed"
+            "es"
         };
 
         public static bool IsPluralOf(this string @in, string of)
@@ -30,6 +30,38 @@ namespace OData.Extensions.Graph.Metadata
             }
 
             return false;
+        }
+
+        public static string RemovePluralization(this string @in)
+        {
+            int remove = 0;
+
+            if(@in.EndsWith("ss"))
+            {
+                return @in;
+            }
+
+            if (@in.EndsWith("sses"))
+            {
+                return @in.Substring(0, @in.Length - 2);
+            }
+
+            if (@in.EndsWith("ses"))
+            {
+                return @in.Substring(0, @in.Length - 1);
+            }
+
+            if (@in.EndsWith("es"))
+            {
+                return @in.Substring(0, @in.Length - 2);
+            }
+
+            if (@in.EndsWith("s"))
+            {
+                return @in.Substring(0, @in.Length - 1);
+            }
+
+            return @in;
         }
 
         public static bool TryGetCollectionType(this Type type, out Type collectionType)

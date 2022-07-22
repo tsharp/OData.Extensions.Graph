@@ -18,7 +18,7 @@ namespace OData.Extensions.Graph.Metadata
         public bool CanSort { get; set; } = false;
         public bool CanPage { get; set; } = false;
         public bool CanSelectSingle { get; set; } = false;
-        public List<NameString> Arguments { get; set; } = new List<NameString>();
+        public List<Argument> Arguments { get; set; } = new List<Argument>();
         public OperationAccessModifier AccessModifier { get; set; } = OperationAccessModifier.Unknown;
         public NameString EntityName { get; set; }
         public NameString Namespace { get; set; }
@@ -120,11 +120,11 @@ namespace OData.Extensions.Graph.Metadata
             var methodInfo = (objectField.Member ?? objectField.ResolverMember) as MethodInfo;
             var returnType = methodInfo.ReturnType;
 
-            binding.Arguments.AddRange(objectField.Arguments.Select(arg => arg.Name));
-            binding.CanPage = binding.Arguments.Any(arg => arg == "skip");
-            binding.CanFilter = binding.Arguments.Any(arg => arg == "where");
-            binding.CanSort = binding.Arguments.Any(arg => arg == "order");
-            binding.CanSelectSingle = binding.Arguments.Any(arg => arg == "id" || arg == "key");
+            binding.Arguments.AddRange(objectField.Arguments.ToArray());
+            binding.CanPage = binding.Arguments.Any(arg => arg.Name == "skip");
+            binding.CanFilter = binding.Arguments.Any(arg => arg.Name == "where");
+            binding.CanSort = binding.Arguments.Any(arg => arg.Name == "order");
+            binding.CanSelectSingle = binding.Arguments.Any(arg => arg.Name == "id" || arg.Name == "key");
 
             if(!useAccessModifiers)
             {

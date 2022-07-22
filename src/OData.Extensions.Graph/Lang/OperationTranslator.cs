@@ -1,5 +1,6 @@
 ﻿using HotChocolate;
 using HotChocolate.Language;
+using HotChocolate.Types;
 using Microsoft.OData;
 using Microsoft.OData.Edm;
 using Microsoft.OData.UriParser;
@@ -102,7 +103,7 @@ namespace OData.Extensions.Graph.Lang
             IEdmEntitySet entitySet,
             OperationBinding operationBinding,
             bool allowFiltering,
-            params string[] requestArguments)
+            params string[] requestVariables)
         {
             var operation = new TranslatedOperation();
             operation.PathSegment = entitySet.Name;
@@ -190,10 +191,21 @@ namespace OData.Extensions.Graph.Lang
                 arguments.Add(new ArgumentNode("take", new IntValueNode(top.Value)));
             }
 
-            // Add arguments from the body
-            foreach (var argument in requestArguments)
+            var variables = new List<VariableDefinitionNode>();
+
+            // Add variables from the body
+            foreach (var variable in requestVariables)
             {
-                arguments.Add(new ArgumentNode(argument, new VariableNode(argument)));
+                var arg = operationBinding?.Arguments?.Where(arg => arg.Name == variable)?.SingleOrDefault();
+
+                if (arg == null)
+                {
+                    throw new ODataException($"Argument Does Not Exist: `{variable}`");
+                }
+
+                var variableNode = new VariableNode(variable);
+                arguments.Add(new ArgumentNode(variable, variableNode));
+                variables.Add(new VariableDefinitionNode(null, variableNode, arg.Type.ToTypeNode(), null, Array.Empty<DirectiveNode>()));
             }
 
             var querySelectionSet = new SelectionSetNode(new ISelectionNode[] {
@@ -208,7 +220,7 @@ namespace OData.Extensions.Graph.Lang
 
             var operationDefinition = new OperationDefinitionNode(
                null,
-               default,
+               requestVariables != null && requestVariables.Any() ? new NameNode(entitySet.Name) : default,
                operationType,
                new VariableDefinitionNode[] { },
                new DirectiveNode[] { },

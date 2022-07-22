@@ -1,10 +1,15 @@
 ﻿using HotChocolate;
+using HotChocolate.Types;
+using HotChocolate.Types.Descriptors;
+using HotChocolate.Types.Descriptors.Definitions;
 using OData.Extensions.Graph.Metadata;
 
 namespace OData.Extensions.Graph.Test
 {
     public class DebugBindingResolver : IBindingResolver
     {
+        private readonly ITypeInspector typeInspector = new DefaultTypeInspector();
+
         public static IBindingResolver Instance => new DebugBindingResolver();
 
         public DebugBindingResolver()

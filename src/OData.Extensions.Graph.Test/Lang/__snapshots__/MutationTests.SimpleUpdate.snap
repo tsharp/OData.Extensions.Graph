@@ -1,5 +1,5 @@
 ﻿mutation {
-  user(Id: $Id) {
+  user {
     Status
   }
 }

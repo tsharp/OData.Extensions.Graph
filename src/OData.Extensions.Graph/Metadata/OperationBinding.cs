@@ -37,7 +37,7 @@ namespace OData.Extensions.Graph.Metadata
 
             var namePart = setNameParts[useNamespace ? 1 : 0];
 
-            switch (setNameParts.First())
+            switch (namePart)
             {
                 case "pub":
                     return OperationAccessModifier.Public;

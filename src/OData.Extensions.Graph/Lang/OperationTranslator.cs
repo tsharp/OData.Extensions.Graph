@@ -18,7 +18,7 @@ namespace OData.Extensions.Graph.Lang
         private readonly NameString schemaName;
 
         public OperationTranslator(
-            IBindingResolver bindingResolver, 
+            IBindingResolver bindingResolver,
             IEdmModel model,
             NameString schemaName = default)
         {
@@ -27,7 +27,7 @@ namespace OData.Extensions.Graph.Lang
             this.schemaName = schemaName;
         }
 
-        public TranslatedOperation Translate(string query, bool allowFiltering, params string[] requestArguments)
+        public TranslatedOperation TranslateQuery(string query, params string[] requestArguments)
         {
             var parser = new ODataUriParser(model, new Uri($"{query}", UriKind.Relative));
 
@@ -43,11 +43,60 @@ namespace OData.Extensions.Graph.Lang
                 path,
                 entitySet,
                 operationBinding,
-                allowFiltering,
                 requestArguments);
         }
 
         public TranslatedOperation TranslateQuery(
+            ODataUriParser parser,
+            ODataPath path,
+            IEdmEntitySet entitySet,
+            OperationBinding operationBinding,
+            params string[] requestArguments)
+            => Translate(
+                OperationType.Query,
+                parser,
+                path,
+                entitySet,
+                operationBinding,
+                true,
+                requestArguments);
+
+        public TranslatedOperation TranslateMutation(string query, params string[] requestArguments)
+        {
+            var parser = new ODataUriParser(model, new Uri($"{query}", UriKind.Relative));
+
+            // Parse path and initial segment
+            ODataPath path = parser.ParsePath();
+            var pathSegment = ODataUtility.GetIdentifierFromSelectedPath(path);
+
+            IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
+            OperationBinding operationBinding = bindingResolver.Resolve(entitySet.Name, schemaName);
+
+            return TranslateMutation(
+                parser,
+                path,
+                entitySet,
+                operationBinding,
+                requestArguments);
+        }
+
+        public TranslatedOperation TranslateMutation(
+            ODataUriParser parser,
+            ODataPath path,
+            IEdmEntitySet entitySet,
+            OperationBinding operationBinding,
+            params string[] requestArguments)
+            => Translate(
+                OperationType.Mutation,
+                parser,
+                path,
+                entitySet,
+                operationBinding,
+                false,
+                requestArguments);
+
+        private TranslatedOperation Translate(
+            OperationType operationType,
             ODataUriParser parser,
             ODataPath path,
             IEdmEntitySet entitySet,
@@ -76,7 +125,7 @@ namespace OData.Extensions.Graph.Lang
                     count != null ||
                     orderBy != null;
 
-                if(hasFilters)
+                if (hasFilters)
                 {
                     throw new ODataException("Filter and ordering operators are not allowed.");
                 }
@@ -93,7 +142,7 @@ namespace OData.Extensions.Graph.Lang
             if (operationBinding != null)
             {
                 hasFiltering = operationBinding.CanFilter;
-            } 
+            }
             // An operation binding can't help here and we must try to make a best
             // effort to infer whether or not we have filtering available
             else
@@ -142,7 +191,7 @@ namespace OData.Extensions.Graph.Lang
             }
 
             // Add arguments from the body
-            foreach(var argument in requestArguments)
+            foreach (var argument in requestArguments)
             {
                 arguments.Add(new ArgumentNode(argument, new VariableNode(argument)));
             }
@@ -157,15 +206,15 @@ namespace OData.Extensions.Graph.Lang
                     arguments,
                     selectionSetNode) });
 
-            var queryOp = new OperationDefinitionNode(
+            var operationDefinition = new OperationDefinitionNode(
                null,
                default,
-               OperationType.Query,
+               operationType,
                new VariableDefinitionNode[] { },
                new DirectiveNode[] { },
                querySelectionSet);
 
-            operation.DocumentNode = new DocumentNode(new IDefinitionNode[] { queryOp });
+            operation.DocumentNode = new DocumentNode(new IDefinitionNode[] { operationDefinition });
 
             return operation;
         }
@@ -203,7 +252,7 @@ namespace OData.Extensions.Graph.Lang
                         selections.Add(fieldNode);
                     }
                 }
-            
+
                 foreach (var astExpand in expanded)
                 {
                     if (!allowFiltering)

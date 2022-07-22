@@ -14,7 +14,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Status", false, "Id");
+            var filerByUserId = translator.TranslateMutation("/user?$select=Status", "Id");
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -27,7 +27,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act & Assert
-            Assert.Throws<ODataException>(() => translator.Translate("/user?$select=Status&$filter=Id eq null", false, "Id"));
+            Assert.Throws<ODataException>(() => translator.TranslateMutation("/user?$select=Status&$filter=Id eq null", "Id"));
         }
     }
 }

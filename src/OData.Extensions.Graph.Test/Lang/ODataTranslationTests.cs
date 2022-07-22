@@ -16,9 +16,9 @@ namespace OData.Extensions.Graph.Test.Lang
             // Act
 
             // Assert
-            Assert.Throws<ODataException>(() => translator.Translate("/user?$select", true));
-            Assert.Throws<ODataException>(() => translator.Translate("/user?$expand", true));
-            Assert.Throws<ODataException>(() => translator.Translate("/user?$select&$expand", true));
+            Assert.Throws<ODataException>(() => translator.TranslateQuery("/user?$select"));
+            Assert.Throws<ODataException>(() => translator.TranslateQuery("/user?$expand"));
+            Assert.Throws<ODataException>(() => translator.TranslateQuery("/user?$select&$expand"));
         }
 
         [Fact]
@@ -28,7 +28,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var basic_selectUserId = translator.Translate("/user?$select=Id", true);
+            var basic_selectUserId = translator.TranslateQuery("/user?$select=Id");
 
             // Assert
             basic_selectUserId.MatchSnapshot();

@@ -22,7 +22,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id in ('Milk', 'Cheese')", true);
+            var filerByUserId = translator.TranslateQuery("/user?$select=Id&$filter=Id in ('Milk', 'Cheese')");
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();

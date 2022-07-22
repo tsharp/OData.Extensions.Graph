@@ -85,7 +85,6 @@ namespace OData.Extensions.Graph
 
                 IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
                 OperationBinding operationBinding = bindingResolver.Resolve(entitySet.Name, schemaName);
-                bool allowGeneralFiltering = false;
 
                 switch (context.Request.Method.ToUpperInvariant())
                 {
@@ -96,14 +95,13 @@ namespace OData.Extensions.Graph
                         break;
                     // These methods can have id's in their arguments only
                     case "GET":
-                        allowGeneralFiltering = true;
                         break;
                     default:
                         context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                         return true;
                 }
 
-                operation = translator.TranslateQuery(parser, path, entitySet, operationBinding, allowGeneralFiltering);
+                operation = translator.TranslateQuery(parser, path, entitySet, operationBinding);
                 var result = await ExecuteGraphQuery(context, operation.PathSegment, operation.DocumentNode);
                 await SendResponseObjectAsync(context, result);
             }
@@ -278,7 +276,7 @@ namespace OData.Extensions.Graph
                 // TODO: Some other parsing ...
                 return response;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // I am not sure what kind of exceptions to expect here
                 context.Response.StatusCode = 400;

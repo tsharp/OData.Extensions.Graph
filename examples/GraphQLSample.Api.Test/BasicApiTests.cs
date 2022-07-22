@@ -46,10 +46,6 @@ namespace GraphQLSample.Api.Test
         public async Task CreateUser()
         {
             // Arrange
-            var query = "{user(where: { Id: { in: [ \"Milk\", \"Cheese\" ] } }) { items { Id } } }";
-
-            Utf8GraphQLParser.Parse(query).ToString(true).MatchSnapshot();
-
             var client = factory.CreateClient();
             var data = new Dictionary<string, object>()
             {

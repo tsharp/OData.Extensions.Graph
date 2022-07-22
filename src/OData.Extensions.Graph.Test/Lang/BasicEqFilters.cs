@@ -14,7 +14,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Status&$filter=Status eq 'Undefined'");
+            var filerByUserId = translator.Translate("/user?$select=Status&$filter=Status eq 'Undefined'", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -27,7 +27,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id eq '1234'");
+            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id eq '1234'", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -40,7 +40,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=CreatedOn eq 2022-01-07");
+            var filerByUserId = translator.Translate("/user?$select=Id&$filter=CreatedOn eq 2022-01-07", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -53,7 +53,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Age eq 100");
+            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Age eq 100", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -66,7 +66,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Longitude eq 1.0");
+            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Longitude eq 1.0", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -79,7 +79,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=IsActive eq true");
+            var filerByUserId = translator.Translate("/user?$select=Id&$filter=IsActive eq true", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -92,7 +92,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id eq null");
+            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id eq null", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();

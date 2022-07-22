@@ -9,12 +9,16 @@ namespace OData.Extensions.Graph
         {
             public static readonly JsonSerializerOptions Options = new JsonSerializerOptions()
             {
-                MaxDepth = 15,
+                MaxDepth = 8,
                 PropertyNameCaseInsensitive = true,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+#if DEBUG
                 WriteIndented = true,
+#else
+                WriteIndented = false,
+#endif
                 Converters =
                 {
                     new JsonStringEnumConverter()

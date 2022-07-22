@@ -1,20 +1,37 @@
-﻿using HotChocolate;
-using Microsoft.OData.Edm;
-using Microsoft.OData.ModelBuilder;
+﻿using Microsoft.OData.ModelBuilder;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OData.Extensions.Graph.Metadata
 {
     internal static class Extensions
     {
+        private static string[] pluralizations = new[] {
+            "s",
+            "ed"
+        };
+
+        public static bool IsPluralOf(this string @in, string of)
+        {
+            if (of.Equals(@in, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            foreach (var pluralization in pluralizations)
+            {
+                if ($"{of}{pluralization}".Equals(@in, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public static bool TryGetCollectionType(this Type type, out Type collectionType)
         {
             string[] collections = new[]

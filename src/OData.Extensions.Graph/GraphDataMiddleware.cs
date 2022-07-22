@@ -7,6 +7,7 @@ using HotChocolate.Language;
 using Microsoft.AspNetCore.Http;
 using Microsoft.OData;
 using Microsoft.OData.Edm;
+using Microsoft.OData.ModelBuilder.Core.V1;
 using Microsoft.OData.UriParser;
 using OData.Extensions.Graph.Lang;
 using OData.Extensions.Graph.Metadata;
@@ -119,8 +120,8 @@ namespace OData.Extensions.Graph
                 var result = new Dictionary<string, object>()
                 {
                     ["@odata.context"] = "https://some.random-api.com/api/$metadata#Edm.String",
-                    ["@odata.next"] = null,
-                    ["@odata.count"] = null,
+                    //["@odata.next"] = null,
+                    //["@odata.count"] = null,
                     ["errors"] = new object[]
                         {
                             new {
@@ -145,8 +146,8 @@ namespace OData.Extensions.Graph
                 var result = new Dictionary<string, object>()
                 {
                     ["@odata.context"] = "https://some.random-api.com/api/$metadata#Edm.String",
-                    ["@odata.next"] = null,
-                    ["@odata.count"] = null,
+                    //["@odata.next"] = null,
+                    //["@odata.count"] = null,
                     ["errors"] = new object[]
                         {
                             new {
@@ -192,9 +193,9 @@ namespace OData.Extensions.Graph
         {
             var response = new Dictionary<string, object>()
             {
-                ["@odata.context"] = null,
-                ["@odata.next"] = null,
-                ["@odata.count"] = null,
+                //["@odata.context"] = null,
+                //["@odata.next"] = null,
+                //["@odata.count"] = null,
             };
 
             try
@@ -246,31 +247,36 @@ namespace OData.Extensions.Graph
                 if (queryResult != null)
                 {
                     var operation = bindingResolver.Resolve(entitySet, schemaName);
+
+                    // TODO: Fixme, add operation bindings for remote schemas too.
+                    response.Add("@odata.context", $"https://some.random-api.com/api/$metadata#{entitySet}");
+
                     // WARN: This may be a ResultMapList
-                    var resultMap = (ResultMap)queryResult.Data[operation?.Operation ?? entitySet];
-                    var values = new List<IDictionary<string, object>>();
+                    var queryResultData = queryResult.Data[operation?.Operation ?? entitySet];
+                    
+                    // TODO: Parse
+                    var resultData = ParseResults(queryResultData);
 
-                    response.Add("values", values);
-
-                    var entityDict = new Dictionary<string, object>();
-                    values.Add(entityDict);
-
-                    foreach (var property in resultMap)
+                    if(resultData != null && resultData.GetType().IsArray)
                     {
-                        if(property.Name == "items")
+                        response.Add("values", resultData);
+                    }
+                    else if(resultData != null)
+                    {
+                        var resultObject = resultData as IDictionary<string, object>;
+
+                        // Merge data ...
+                        foreach(var item in resultObject)
                         {
-                            foreach(var subList in property.Value as ResultMapList)
+                            var key = item.Key;
+
+                            if(item.Key == "items")
                             {
-                                foreach (var attribute in subList)
-                                {
-                                    entityDict.Add(attribute.Name, attribute.Value);
-                                }
+                                key = "values";
                             }
 
-                            continue;
+                            response.Add(key, item.Value);
                         }
-
-                        entityDict.Add(property.Name, property.Value);
                     }
 
                     return response;
@@ -285,6 +291,63 @@ namespace OData.Extensions.Graph
                 context.Response.StatusCode = 400;
                 return response;
             }
+        }
+
+        private static object ParseResults(object result)
+        {
+            var resultMap = result as IResultMap;
+            var resultMapList = result as IResultMapList;
+
+            if (resultMapList != null)
+            {
+                return ParseResultMapList(resultMapList);
+            }
+
+            if (resultMap != null)
+            {
+                return ParseResultMap(resultMap);
+            }
+
+            return null;
+        }
+
+        private static IEnumerable<IDictionary<string, object>> ParseResultMapList(IResultMapList resultMapList)
+        {
+            var results = new List<IDictionary<string, object>>();
+
+            foreach (var resultMap in resultMapList)
+            {
+                results.Add(ParseResultMap(resultMap));
+            }
+
+            return results.ToArray();
+        }
+
+        private static IDictionary<string, object> ParseResultMap(IResultMap resultMap)
+        {
+            var data = new Dictionary<string, object>();
+
+            foreach (var property in resultMap)
+            {
+                // Hidden properties or null data
+                if(property.Value == null || property.Name.StartsWith("_"))
+                {
+                    continue;
+                }
+
+                var subList = property.Value as IResultMapList;
+
+                if (subList != null)
+                {
+                    var subResults = ParseResultMapList(subList);
+                    data.Add(property.Name, subResults);
+                    continue;
+                }
+                
+                data.Add(property.Name, property.Value);
+            }
+
+            return data;
         }
     }
 }

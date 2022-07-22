@@ -19,7 +19,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=ClassRef/Id eq 'Milk'");
+            var filerByUserId = translator.Translate("/user?$select=Id&$filter=ClassRef/Id eq 'Milk'", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -32,7 +32,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=ClassRef/In/Id eq 'Milk'");
+            var filerByUserId = translator.Translate("/user?$select=Id&$filter=ClassRef/In/Id eq 'Milk'", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -45,7 +45,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id ne 'Milk' and Id ne 'Sour'");
+            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id ne 'Milk' and Id ne 'Sour'", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -58,7 +58,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id ne 'Milk' or Id ne 'Sour'");
+            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id ne 'Milk' or Id ne 'Sour'", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -71,7 +71,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$skip=5");
+            var filerByUserId = translator.Translate("/user?$select=Id&$skip=5", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -84,7 +84,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$top=5");
+            var filerByUserId = translator.Translate("/user?$select=Id&$top=5", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -97,7 +97,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$expand=Conferences($select=Id)");
+            var filerByUserId = translator.Translate("/user?$expand=Conferences($select=Id)", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -110,7 +110,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$count=true");
+            var filerByUserId = translator.Translate("/user?$select=Id&$count=true", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -124,7 +124,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id ne 'Milk' or Id ne 'Sour' and (Id eq 'bob' or CreatedOn lt 2022-01-05)");
+            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id ne 'Milk' or Id ne 'Sour' and (Id eq 'bob' or CreatedOn lt 2022-01-05)", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -137,7 +137,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=contains(Id, 'Milk')");
+            var filerByUserId = translator.Translate("/user?$select=Id&$filter=contains(Id, 'Milk')", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -150,7 +150,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=startswith(Id, 'Milk')");
+            var filerByUserId = translator.Translate("/user?$select=Id&$filter=startswith(Id, 'Milk')", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -165,7 +165,7 @@ namespace OData.Extensions.Graph.Test.Lang
             // Act
             Assert.Throws<ODataException>(() =>
             {
-                var filerByUserId = translator.Translate("/user?$select=Id&$filter=nstartswith(Id, 'Milk')");
+                var filerByUserId = translator.Translate("/user?$select=Id&$filter=nstartswith(Id, 'Milk')", true);
 
                 // Assert
                 filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -179,7 +179,7 @@ namespace OData.Extensions.Graph.Test.Lang
             var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=endswith(Id, 'Milk')");
+            var filerByUserId = translator.Translate("/user?$select=Id&$filter=endswith(Id, 'Milk')", true);
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();

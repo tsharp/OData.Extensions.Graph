@@ -1,11 +1,13 @@
 # https://gitversion.net/docs/reference/configuration#branch-configuration
 next-version: 0.5
-mode: ContinuousDeployment
+mode: mainline
 continuous-delivery-fallback-tag: ""
 branches:
   release:
+    regex: ^releases?[/-]
     tag: ""
     increment: Patch
+    prevent-increment-of-merged-branch-version: false
   feature:
     tag: "dev"
   main:

@@ -1,11 +1,11 @@
 # https://gitversion.net/docs/reference/configuration#branch-configuration
-mode: ContinuousDeployment
+mode: mainline
 continuous-delivery-fallback-tag: ""
 branches:
   release:
-    regex: ^release?[/-]
+    regex: ^releases?[/-]
     tag: ""
-    increment: Minor
+    increment: Patch
     prevent-increment-of-merged-branch-version: false
   feature:
     tag: "dev"

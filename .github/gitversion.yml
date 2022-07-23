@@ -5,6 +5,7 @@ branches:
   release:
     tag: ""
     increment: Patch
+    prevent-increment-of-merged-branch-version: false
   feature:
     tag: "dev"
   main:

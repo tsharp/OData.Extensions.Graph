@@ -92,7 +92,7 @@ namespace OData.Extensions.Graph
                 {
                     case "POST":
                     case "PATCH":
-                        if(!context.Request.HasJsonContentType())
+                        if (!context.Request.HasJsonContentType())
                         {
                             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                             await context.Response.WriteAsync($"`{context.Request.ContentType}` Content-Type is not supported");
@@ -223,6 +223,9 @@ namespace OData.Extensions.Graph
                     }
                 }
                 
+                // TODO: Find a way to use operation bindings to be more useful
+                // with determining the type of response code to send back.
+
                 var result = await requestExecutor.ExecuteAsync(request.Create());
 
                 if (result.Errors?.Any() == true)
@@ -259,7 +262,6 @@ namespace OData.Extensions.Graph
                     }
 
                     return response;
-
                 }
 
                 var queryResult = result as QueryResult;

@@ -3,7 +3,6 @@ using HotChocolate.AspNetCore;
 using HotChocolate.AspNetCore.Serialization;
 using HotChocolate.Execution;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.OData.Edm.Csdl;
 using Microsoft.OData.Edm.Validation;
@@ -49,40 +48,13 @@ namespace OData.Extensions.Graph
                 context.Request.Path.HasValue &&
                 context.Request.Path.StartsWithSegments(metadataBase, StringComparison.InvariantCultureIgnoreCase, out subPaths);
 
-            if (handle)
-            {
-                await HandleRequestAsync(context, subPaths);
-            }
-            else
+            if (!handle || !await HandleRequestAsync(context, subPaths))
             {
                 // if the request is not a get request or if the content type is not correct
                 // we will just invoke the next middleware and do nothing.
                 await NextAsync(context);
             }
         }
-
-        //private async Task<string> GetGraphQLSchemaAsync(HttpContext context)
-        //{
-        //    IRequestExecutor requestExecutor = await GetExecutorAsync(context.RequestAborted);
-
-        //    string fileName =
-        //        requestExecutor.Schema.Name.IsEmpty ||
-        //        requestExecutor.Schema.Name.Equals(Schema.DefaultName)
-        //            ? "schema.graphql"
-        //            : requestExecutor.Schema.Name + ".schema.graphql";
-
-        //    using (MemoryStream stream = new MemoryStream())
-        //    {
-        //        await SchemaSerializer.SerializeAsync(
-        //            requestExecutor.Schema,
-        //            stream,
-        //            indented: true,
-        //            context.RequestAborted)
-        //            .ConfigureAwait(false);
-
-        //        return Encoding.UTF8.GetString(stream.ToArray());
-        //    }
-        //}
 
         private async Task<byte[]> GetRawMetadata(HttpRequest request)
         {
@@ -118,29 +90,36 @@ namespace OData.Extensions.Graph
         }
 
         // TODO: Convert GraphQL Schema to IEdmModel Schema for OData Emit
-        private async Task HandleRequestAsync(HttpContext context, PathString subString)
+        private async Task<bool> HandleRequestAsync(HttpContext context, PathString subString)
         {
             // Proof that we can call an embedded server ...
             var schema = (await GetExecutorAsync(context.RequestAborted)).Schema;
 
-            if (subString.StartsWithSegments(new PathString("/graph")))
+            if (subString.StartsWithSegments(new PathString("/schema")))
             {
                 context.Response.StatusCode = 200;
-                context.Response.ContentType = "application/text";
+                context.Response.ContentType = "application/graphql; charset=utf-8";
                 await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(schema.ToString()));
                 await context.Response.BodyWriter.FlushAsync();
 
-                return;
+                return true;
+            }
+
+            if (subString.HasValue && !string.IsNullOrWhiteSpace(subString.Value))
+            {
+                return false;
             }
 
             context.Response.StatusCode = 200;
-            context.Response.ContentType = "application/xml";
+            context.Response.ContentType = "application/xml; charset=utf-8";
 
             using (var stream = await GetMetadataStreamAsync(context.Request))
             {
                 await stream.CopyToAsync(context.Response.Body);
                 await context.Response.Body.FlushAsync();
             }
+
+            return true;
         }
     }
 }

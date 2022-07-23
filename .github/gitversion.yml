@@ -7,6 +7,6 @@ branches:
   feature:
     tag: "dev"
   main:
-    tag: "beta"
+    tag: "preview"
 ignore:
   sha: []

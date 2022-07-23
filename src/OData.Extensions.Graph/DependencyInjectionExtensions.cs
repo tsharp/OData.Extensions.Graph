@@ -80,9 +80,9 @@
                 .UseMiddleware<GraphDataMiddleware>(schemaNameOrDefault)
                 .Use(async Task (HttpContext context, Func<Task> next) =>
                 {
-                    context.Response.StatusCode = 400;
-                    context.Response.ContentType = "application/json";
-                    var content = Encoding.UTF8.GetBytes("{ \"error\": \"Bad Request\" }");
+                    context.Response.StatusCode = 404;
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    var content = Encoding.UTF8.GetBytes("{ \"error\": \"Not Found\" }");
                     await context.Response.Body.WriteAsync(content, 0, content.Length);
                     await context.Response.Body.FlushAsync();
                 });
@@ -97,7 +97,11 @@
                         EnableSchemaRequests = true,
                         EnableMultipartRequests = true,
                         Tool = {
+#if DEBUG
+                            Enable = true
+#else
                             Enable = false
+#endif
                         }
                     });
             }

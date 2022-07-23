@@ -12,10 +12,10 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void NeEnum()
         {
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Status&$filter=Status ne 'Undefined'");
+            var filerByUserId = translator.TranslateQuery("/user?$select=Status&$filter=Status ne 'Undefined'");
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -25,10 +25,10 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void NeString()
         {
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id ne '1234'");
+            var filerByUserId = translator.TranslateQuery("/user?$select=Id&$filter=Id ne '1234'");
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -38,10 +38,10 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void NeInt()
         {
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Age ne 100");
+            var filerByUserId = translator.TranslateQuery("/user?$select=Id&$filter=Age ne 100");
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -51,7 +51,7 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void SpeedTest()
         {
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
             Stopwatch timer = new Stopwatch();
@@ -59,7 +59,7 @@ namespace OData.Extensions.Graph.Test.Lang
 
             for(int idx = 0; idx <= 10000; idx++)
             {
-                translator.Translate("/user?$select=Id&$filter=Longitude ne 1.0");
+                translator.TranslateQuery("/user?$select=Id&$filter=Longitude ne 1.0");
             }
 
             timer.Stop();
@@ -76,10 +76,10 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void NeDouble()
         {
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Longitude ne 1.0");
+            var filerByUserId = translator.TranslateQuery("/user?$select=Id&$filter=Longitude ne 1.0");
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -89,10 +89,10 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void NeBool()
         {
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=IsActive ne true");
+            var filerByUserId = translator.TranslateQuery("/user?$select=Id&$filter=IsActive ne true");
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();
@@ -102,10 +102,10 @@ namespace OData.Extensions.Graph.Test.Lang
         public static void NeNull()
         {
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id ne null");
+            var filerByUserId = translator.TranslateQuery("/user?$select=Id&$filter=Id ne null");
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();

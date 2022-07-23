@@ -19,10 +19,10 @@ namespace OData.Extensions.Graph.Test.Lang
             Utf8GraphQLParser.Parse(query).ToString(true).MatchSnapshot();
 
             // Arrange
-            var translator = new QueryTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
+            var translator = new OperationTranslator(DebugBindingResolver.Instance, Common.GetEdmModel());
 
             // Act
-            var filerByUserId = translator.Translate("/user?$select=Id&$filter=Id in ('Milk', 'Cheese')");
+            var filerByUserId = translator.TranslateQuery("/user?$select=Id&$filter=Id in ('Milk', 'Cheese')");
 
             // Assert
             filerByUserId.DocumentNode.ToString(true).MatchSnapshot();

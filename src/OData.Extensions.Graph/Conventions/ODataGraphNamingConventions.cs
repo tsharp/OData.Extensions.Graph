@@ -2,6 +2,7 @@
 using HotChocolate.Types;
 using HotChocolate.Types.Descriptors;
 using OData.Extensions.Graph.Annotations;
+using OData.Extensions.Graph.Security;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
@@ -19,6 +20,11 @@ namespace OData.Extensions.Graph.Conventions
 
         public override NameString GetMemberName(MemberInfo member, MemberKind kind)
         {
+            if(kind != MemberKind.ObjectField)
+            {
+                return base.GetMemberName(member, kind);
+            }
+
             var accessModifier = member.GetCustomAttribute<AccessModifierAttribute>();
             var applyNamespace = member.DeclaringType.GetCustomAttribute<ApplyServiceNamespaceAttribute>() != null;
             var @namespace = serviceNamespaceProvider.ServiceName;

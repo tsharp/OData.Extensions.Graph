@@ -1,17 +1,13 @@
 using GraphQLSample.Api.Core;
 using GraphQLSample.Api.Dto;
 using HotChocolate.Types;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Identity.Web;
-using Microsoft.Identity.Web.UI;
 using Microsoft.OpenApi.Models;
 using OData.Extensions.Graph;
-using System;
 
 namespace GraphQLSample.Api
 {
@@ -27,11 +23,7 @@ namespace GraphQLSample.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddApplicationInsightsTelemetry(Configuration);
-
-            services
-                .AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-                .AddMicrosoftIdentityWebApp(Configuration.GetSection("AzureAd"));
+            // services.AddApplicationInsightsTelemetry(Configuration);
 
             //services.AddHttpClient("jobs", (sp, client) =>
             //{
@@ -46,8 +38,7 @@ namespace GraphQLSample.Api
 
             services
                 .AddRazorPages()
-                .AddMvcOptions(options => { })
-                .AddMicrosoftIdentityUI();
+                .AddMvcOptions(options => { });
 
             services.AddControllers();
 
@@ -71,7 +62,7 @@ namespace GraphQLSample.Api
                 .AddType<ClassObjectType>()
                 .AddType<ObjectType<Conference>>()
                 // .AddSubscriptionType<SubscriptionObjectType>()
-                // .AddMutationType<MutationObjectType>()
+                .AddMutationType<MutationObjectType>()
                 .AddQueryType<QueryObjectType>();
 
             services.AddCors(options =>

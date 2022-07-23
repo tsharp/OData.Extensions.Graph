@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
+using OData.Extensions.Graph.Lang;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -118,7 +119,7 @@ namespace OData.Extensions.Graph.Metadata
                 .Where(t =>
                     t.IsNamedType() &&
                     t.IsObjectType() &&
-                    !t.Name.Value.StartsWith("__") &&
+                    !t.Name.Value.StartsWith("_") &&
                     t.Name != schema.MutationType?.Name &&
                     t.Name != schema.QueryType?.Name))
             {
@@ -134,7 +135,7 @@ namespace OData.Extensions.Graph.Metadata
                 model.AddElement(entityType);
                 var keys = new List<IEdmStructuralProperty>();
 
-                foreach (var field in objectType.Fields.Where(f => !f.Name.Value.StartsWith("__")))
+                foreach (var field in objectType.Fields.Where(f => !f.Name.Value.StartsWith("_")))
                 {
                     var resolved = model.FindType(field.RuntimeType.Name);
 
@@ -194,29 +195,76 @@ namespace OData.Extensions.Graph.Metadata
                 }
             }
 
-            // Now parse out and resolve entity sets
-            foreach (var objectType in schema.QueryType.Fields
-                .Where(f =>
-                    f.Name.HasValue &&
-                    !f.Name.Value.StartsWith("__") &&
-                    f.Member == null && f.ResolverMember == null))
+            if (schema.QueryType != null)
             {
-                var resolvedEntity = model.FindType($"{remoteNamespace}.{objectType.Type.TypeName()}") as IEdmEntityType;
-
-                if (resolvedEntity == null)
+                // Now parse out and resolve entity sets
+                foreach (var objectType in schema.QueryType.Fields
+                    .Where(f =>
+                        f.Name.HasValue &&
+                        !f.Name.Value.StartsWith("_") &&
+                        f.Member == null && f.ResolverMember == null))
                 {
-                    continue;
-                }
+                    var resolvedEntity = model.FindType($"{remoteNamespace}.{objectType.Type.TypeName()}") as IEdmEntityType;
 
-                if (objectType.RuntimeType.IsCollectionType())
+                    if (resolvedEntity == null)
+                    {
+                        continue;
+                    }
+
+                    if (objectType.RuntimeType.IsCollectionType() &&
+                        objectType.Name.Value.IsPluralOf(resolvedEntity.Name))
+                    {
+                        container.AddEntitySet(objectType.Name, resolvedEntity);
+                        continue;
+                    }
+
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"Unable to Map Entity Endpoint: {objectType.Name}");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+            }
+
+            // Add mutations!
+            if (schema.MutationType != null)
+            {
+                foreach (var objectField in schema.MutationType.Fields.Where(f =>
+                         f.Name.HasValue &&
+                         !f.Name.Value.StartsWith("_")))
                 {
-                    container.AddEntitySet(objectType.Name, resolvedEntity);
-                    continue;
-                }
+                    var name = $"{remoteNamespace}.{objectField.Type.TypeName()}";
+                    var resolved = model.GetEntitySetOrNull(name, true);
 
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"Unable to Map Entity Endpoint: {objectType.Name}");
-                Console.ForegroundColor = ConsoleColor.White;
+                    if (resolved == null)
+                    {
+                        resolved = localModel.GetEntitySetOrNull(name, true);
+                    }
+
+                    if (resolved == null)
+                    {
+                        continue;
+                    }
+
+                    var binding = OperationBinding.Bind(objectField, resolved, true, true);
+
+                    // Is General Mutation?
+                    if (binding.EntitySet.Value.StartsWith("Delete", StringComparison.InvariantCultureIgnoreCase) ||
+                        binding.EntitySet.Value.StartsWith("Remove", StringComparison.InvariantCultureIgnoreCase) ||
+                        binding.EntitySet.Value.StartsWith("Update", StringComparison.InvariantCultureIgnoreCase) ||
+                        binding.EntitySet.Value.StartsWith("Set", StringComparison.InvariantCultureIgnoreCase) ||
+                        binding.EntitySet.Value.StartsWith("Create", StringComparison.InvariantCultureIgnoreCase) ||
+                        binding.EntitySet.Value.StartsWith("New", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        if (binding != null)
+                        {
+                            bindingResolver.Register(binding, schemaName);
+                        }
+                    }
+                }
+            }
+
+            if(schema.SubscriptionType != null)
+            {
+
             }
 
             return model;
@@ -228,7 +276,7 @@ namespace OData.Extensions.Graph.Metadata
             foreach (var objectType in schema.Types.Where(t =>
                     t.Kind == TypeKind.Object &&
                     t.Name.HasValue &&
-                    !t.Name.Value.StartsWith("__") &&
+                    !t.Name.Value.StartsWith("_") &&
                     t.GetType().GenericTypeArguments.Any()).Cast<ObjectType>())
             {
                 // No
@@ -244,7 +292,7 @@ namespace OData.Extensions.Graph.Metadata
             foreach (var objectField in schema.QueryType.Fields
                 .Where(f =>
                     f.Name.HasValue &&
-                    !f.Name.Value.StartsWith("__") &&
+                    !f.Name.Value.StartsWith("_") &&
                     (f.Member != null || f.ResolverMember != null)))
             {
                 var binding = OperationBinding.Bind(builder, objectField, true, true);

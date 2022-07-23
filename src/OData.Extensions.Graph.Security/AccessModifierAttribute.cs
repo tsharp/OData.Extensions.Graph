@@ -1,7 +1,6 @@
-﻿using OData.Extensions.Graph.Security;
-using System;
+﻿using System;
 
-namespace OData.Extensions.Graph.Annotations
+namespace OData.Extensions.Graph.Security
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
     public class AccessModifierAttribute : Attribute

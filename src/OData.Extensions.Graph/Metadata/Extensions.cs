@@ -1,20 +1,69 @@
-﻿using HotChocolate;
-using Microsoft.OData.Edm;
-using Microsoft.OData.ModelBuilder;
+﻿using Microsoft.OData.ModelBuilder;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OData.Extensions.Graph.Metadata
 {
     internal static class Extensions
     {
+        private static string[] pluralizations = new[] {
+            "s",
+            "es"
+        };
+
+        public static bool IsPluralOf(this string @in, string of)
+        {
+            if (of.Equals(@in, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            foreach (var pluralization in pluralizations)
+            {
+                if ($"{of}{pluralization}".Equals(@in, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static string RemovePluralization(this string @in)
+        {
+            int remove = 0;
+
+            if(@in.EndsWith("ss"))
+            {
+                return @in;
+            }
+
+            if (@in.EndsWith("sses"))
+            {
+                return @in.Substring(0, @in.Length - 2);
+            }
+
+            if (@in.EndsWith("ses"))
+            {
+                return @in.Substring(0, @in.Length - 1);
+            }
+
+            if (@in.EndsWith("es"))
+            {
+                return @in.Substring(0, @in.Length - 2);
+            }
+
+            if (@in.EndsWith("s"))
+            {
+                return @in.Substring(0, @in.Length - 1);
+            }
+
+            return @in;
+        }
+
         public static bool TryGetCollectionType(this Type type, out Type collectionType)
         {
             string[] collections = new[]

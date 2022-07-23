@@ -1,5 +1,6 @@
 ﻿using HotChocolate;
 using HotChocolate.Types;
+using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
 using OData.Extensions.Graph.Security;
 using System;
@@ -18,7 +19,7 @@ namespace OData.Extensions.Graph.Metadata
         public bool CanSort { get; set; } = false;
         public bool CanPage { get; set; } = false;
         public bool CanSelectSingle { get; set; } = false;
-        public List<NameString> Arguments { get; set; } = new List<NameString>();
+        public List<Argument> Arguments { get; set; } = new List<Argument>();
         public OperationAccessModifier AccessModifier { get; set; } = OperationAccessModifier.Unknown;
         public NameString EntityName { get; set; }
         public NameString Namespace { get; set; }
@@ -27,7 +28,7 @@ namespace OData.Extensions.Graph.Metadata
 
         private static OperationAccessModifier ParseModifier(string name, bool useNamespace)
         {
-            var setNameParts = name.Split("_");
+            var setNameParts = name.Split("_", StringSplitOptions.RemoveEmptyEntries);
 
             if (setNameParts.Length < 2 || (setNameParts.Length < 3 && useNamespace))
             {
@@ -36,7 +37,7 @@ namespace OData.Extensions.Graph.Metadata
 
             var namePart = setNameParts[useNamespace ? 1 : 0];
 
-            switch (setNameParts.First())
+            switch (namePart)
             {
                 case "pub":
                     return OperationAccessModifier.Public;
@@ -63,7 +64,7 @@ namespace OData.Extensions.Graph.Metadata
 
         private static NameString ParseEntitySetName(string name, bool useNamespaces, bool useAccessModifiers)
         {
-            var setNameParts = name.Split("_");
+            var setNameParts = name.Split("_", StringSplitOptions.RemoveEmptyEntries);
             var skip = 0;
 
             if (useNamespaces)
@@ -114,17 +115,52 @@ namespace OData.Extensions.Graph.Metadata
             }
         }
 
+        public static OperationBinding Bind(ObjectField objectField, IEdmEntitySet entitySet, bool useNamespace = false, bool useAccessModifiers = false)
+        {
+            var binding = new OperationBinding();
+            var methodInfo = (objectField.Member ?? objectField.ResolverMember) as MethodInfo;
+            var returnType = methodInfo.ReturnType;
+
+            binding.Arguments.AddRange(objectField.Arguments.ToArray());
+            //binding.CanPage = binding.Arguments.Any(arg => arg.Name == "skip");
+            //binding.CanFilter = binding.Arguments.Any(arg => arg.Name == "where");
+            //binding.CanSort = binding.Arguments.Any(arg => arg.Name == "order");
+            binding.CanSelectSingle = binding.Arguments.Any(arg => arg.Name == "id" || arg.Name == "key");
+
+            if (!useAccessModifiers)
+            {
+                binding.AccessModifier = OperationAccessModifier.Public;
+            }
+
+            binding.IsSet = false;
+
+            if (useAccessModifiers)
+            {
+                binding.AccessModifier = ParseModifier(objectField.Name, useNamespace);
+            }
+
+            if (useNamespace)
+            {
+                binding.Namespace = ParseNamespace(objectField.Name);
+            }
+
+            binding.EntitySet = ParseEntitySetName(objectField.Name, useNamespace, useAccessModifiers);
+            binding.Operation = objectField.Name;
+
+            return binding;
+        }
+
         public static OperationBinding Bind(ODataModelBuilder builder, ObjectField objectField, bool useNamespace = false, bool useAccessModifiers = false)
         {
             var binding = new OperationBinding();
             var methodInfo = (objectField.Member ?? objectField.ResolverMember) as MethodInfo;
             var returnType = methodInfo.ReturnType;
 
-            binding.Arguments.AddRange(objectField.Arguments.Select(arg => arg.Name));
-            binding.CanPage = binding.Arguments.Any(arg => arg == "skip");
-            binding.CanFilter = binding.Arguments.Any(arg => arg == "where");
-            binding.CanSort = binding.Arguments.Any(arg => arg == "order");
-            binding.CanSelectSingle = binding.Arguments.Any(arg => arg == "id" || arg == "key");
+            binding.Arguments.AddRange(objectField.Arguments.ToArray());
+            binding.CanPage = binding.Arguments.Any(arg => arg.Name == "skip");
+            binding.CanFilter = binding.Arguments.Any(arg => arg.Name == "where");
+            binding.CanSort = binding.Arguments.Any(arg => arg.Name == "order");
+            binding.CanSelectSingle = binding.Arguments.Any(arg => arg.Name == "id" || arg.Name == "key");
 
             if(!useAccessModifiers)
             {

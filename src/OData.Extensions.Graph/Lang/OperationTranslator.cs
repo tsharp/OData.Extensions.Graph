@@ -1,5 +1,7 @@
 ﻿using HotChocolate;
 using HotChocolate.Language;
+using HotChocolate.Types;
+using Microsoft.OData;
 using Microsoft.OData.Edm;
 using Microsoft.OData.UriParser;
 using OData.Extensions.Graph.Metadata;
@@ -10,14 +12,14 @@ using System.Text.Json;
 
 namespace OData.Extensions.Graph.Lang
 {
-    public class QueryTranslator
+    public class OperationTranslator
     {
         private readonly IEdmModel model;
         private readonly IBindingResolver bindingResolver;
         private readonly NameString schemaName;
 
-        public QueryTranslator(
-            IBindingResolver bindingResolver, 
+        public OperationTranslator(
+            IBindingResolver bindingResolver,
             IEdmModel model,
             NameString schemaName = default)
         {
@@ -26,23 +28,85 @@ namespace OData.Extensions.Graph.Lang
             this.schemaName = schemaName;
         }
 
-        public TranslatedQuery Translate(string query)
+        public TranslatedOperation TranslateQuery(string query, params string[] requestArguments)
         {
-            return Translate(new ODataUriParser(model, new Uri($"{query}", UriKind.Relative)));
-        }
+            var parser = new ODataUriParser(model, new Uri($"{query}", UriKind.Relative));
 
-        public TranslatedQuery Translate(ODataUriParser parser)
-        {
-            var query = new TranslatedQuery();
-
-            // Identifier
+            // Parse path and initial segment
             ODataPath path = parser.ParsePath();
-
             var pathSegment = ODataUtility.GetIdentifierFromSelectedPath(path);
-            query.PathSegment = pathSegment;
 
             IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
-            OperationBinding operationBinding = bindingResolver.Resolve(entitySet.Name, schemaName);
+            OperationBinding operationBinding = bindingResolver.ResolveQuery(entitySet.Name, schemaName);
+
+            return TranslateQuery(
+                parser,
+                path,
+                entitySet,
+                operationBinding,
+                requestArguments);
+        }
+
+        public TranslatedOperation TranslateQuery(
+            ODataUriParser parser,
+            ODataPath path,
+            IEdmEntitySet entitySet,
+            OperationBinding operationBinding,
+            params string[] requestArguments)
+            => Translate(
+                OperationType.Query,
+                parser,
+                path,
+                entitySet,
+                operationBinding,
+                true,
+                requestArguments);
+
+        public TranslatedOperation TranslateMutation(string query, params string[] requestVariables)
+        {
+            var parser = new ODataUriParser(model, new Uri($"{query}", UriKind.Relative));
+
+            // Parse path and initial segment
+            ODataPath path = parser.ParsePath();
+            var pathSegment = ODataUtility.GetIdentifierFromSelectedPath(path);
+
+            IEdmEntitySet entitySet = model.GetEntitySet(pathSegment);
+            OperationBinding operationBinding = bindingResolver.ResolveQuery(entitySet.Name, schemaName);
+
+            return TranslateMutation(
+                parser,
+                path,
+                entitySet,
+                operationBinding,
+                requestVariables);
+        }
+
+        public TranslatedOperation TranslateMutation(
+            ODataUriParser parser,
+            ODataPath path,
+            IEdmEntitySet entitySet,
+            OperationBinding operationBinding,
+            params string[] requestVariables)
+            => Translate(
+                OperationType.Mutation,
+                parser,
+                path,
+                entitySet,
+                operationBinding,
+                false,
+                requestVariables);
+
+        private TranslatedOperation Translate(
+            OperationType operationType,
+            ODataUriParser parser,
+            ODataPath path,
+            IEdmEntitySet entitySet,
+            OperationBinding operationBinding,
+            bool allowFiltering,
+            params string[] requestVariables)
+        {
+            var operation = new TranslatedOperation();
+            operation.PathSegment = entitySet.Name;
 
             // Handle select
             var selectClause = parser.ParseSelectAndExpand(); //parse $select, $expand
@@ -50,7 +114,23 @@ namespace OData.Extensions.Graph.Lang
             var skip = parser.ParseSkip();
             var top = parser.ParseTop();
             var count = parser.ParseCount();
+            var orderBy = parser.ParseOrderBy();
+
             var operationName = operationBinding?.Operation ?? entitySet.Name;
+
+            if (!allowFiltering)
+            {
+                var hasFilters = filterClause != null ||
+                    skip != null ||
+                    top != null ||
+                    count != null ||
+                    orderBy != null;
+
+                if (hasFilters)
+                {
+                    throw new ODataException("Filter and ordering operators are not allowed.");
+                }
+            }
 
             if (selectClause == null || !selectClause.SelectedItems.Any())
             {
@@ -63,7 +143,7 @@ namespace OData.Extensions.Graph.Lang
             if (operationBinding != null)
             {
                 hasFiltering = operationBinding.CanFilter;
-            } 
+            }
             // An operation binding can't help here and we must try to make a best
             // effort to infer whether or not we have filtering available
             else
@@ -71,7 +151,7 @@ namespace OData.Extensions.Graph.Lang
                 hasFiltering = filterClause != null;
             }
 
-            var selectionSetNode = BuildFromSelectExpandClause(entitySet, hasFiltering, count.HasValue && count.Value, selectClause);
+            var selectionSetNode = BuildFromSelectExpandClause(entitySet, false, hasFiltering, count.HasValue && count.Value, selectClause);
 
             var arguments = new List<ArgumentNode>();
             arguments.AddRange(ODataUtility.GetKeyArguments(path));
@@ -82,7 +162,7 @@ namespace OData.Extensions.Graph.Lang
 
                 if (paramClean.StartsWith("{") && paramClean.EndsWith("}"))
                 {
-                    var obj = JsonSerializer.Deserialize<Dictionary<string, object>>(paramClean, Constants.Serialization.Options);
+                    var obj = JsonSerializer.Deserialize<Dictionary<string, object>>(paramClean, Constants.Serialization.Reading);
 
                     // TODO: Better parsing?
                     var fields = obj.Select(field => new ObjectFieldNode(field.Key, field.Value.ToString())).ToArray();
@@ -111,6 +191,23 @@ namespace OData.Extensions.Graph.Lang
                 arguments.Add(new ArgumentNode("take", new IntValueNode(top.Value)));
             }
 
+            var variables = new List<VariableDefinitionNode>();
+
+            // Add variables from the body
+            foreach (var variable in requestVariables)
+            {
+                var arg = operationBinding?.Arguments?.Where(arg => arg.Name == variable)?.SingleOrDefault();
+
+                if (arg == null)
+                {
+                    throw new ODataException($"Argument Does Not Exist: `{variable}`");
+                }
+
+                var variableNode = new VariableNode(variable);
+                arguments.Add(new ArgumentNode(variable, variableNode));
+                variables.Add(new VariableDefinitionNode(null, variableNode, arg.Type.ToTypeNode(), null, Array.Empty<DirectiveNode>()));
+            }
+
             var querySelectionSet = new SelectionSetNode(new ISelectionNode[] {
                 new FieldNode(
                     null,
@@ -121,20 +218,20 @@ namespace OData.Extensions.Graph.Lang
                     arguments,
                     selectionSetNode) });
 
-            var queryOp = new OperationDefinitionNode(
+            var operationDefinition = new OperationDefinitionNode(
                null,
-               default,
-               OperationType.Query,
-               new VariableDefinitionNode[] { },
+               requestVariables != null && requestVariables.Any() ? new NameNode(entitySet.Name) : default,
+               operationType,
+               variables.ToArray(),
                new DirectiveNode[] { },
                querySelectionSet);
 
-            query.DocumentNode = new DocumentNode(new IDefinitionNode[] { queryOp });
+            operation.DocumentNode = new DocumentNode(new IDefinitionNode[] { operationDefinition });
 
-            return query;
+            return operation;
         }
 
-        private SelectionSetNode BuildFromSelectExpandClause(IEdmEntitySet entitySet, bool isFilterable, bool includeCount, SelectExpandClause selectionClause)
+        private SelectionSetNode BuildFromSelectExpandClause(IEdmEntitySet entitySet, bool allowFiltering, bool isFilterable, bool includeCount, SelectExpandClause selectionClause)
         {
             var selections = new List<ISelectionNode>();
 
@@ -167,11 +264,26 @@ namespace OData.Extensions.Graph.Lang
                         selections.Add(fieldNode);
                     }
                 }
-            
+
                 foreach (var astExpand in expanded)
                 {
+                    if (!allowFiltering)
+                    {
+                        var hasFilters = astExpand.FilterOption != null ||
+                            astExpand.TopOption != null ||
+                            astExpand.SkipOption != null ||
+                            astExpand.CountOption != null ||
+                            astExpand.OrderByOption != null;
+
+                        if (hasFilters)
+                        {
+                            throw new ODataException("Filter and ordering operators are not allowed.");
+                        }
+                    }
+
                     // TODO: Add navigation property filtering and cleanup this implementation a bit
-                    var expandSelections = BuildFromSelectExpandClause(entitySet, false, false, astExpand.SelectAndExpand);
+                    // Any nested filtering or junk is explicitly not allowed.
+                    var expandSelections = BuildFromSelectExpandClause(entitySet, false, false, false, astExpand.SelectAndExpand);
 
                     var selectionName = ODataUtility.GetIdentifierFromSelectedPath(astExpand.PathToNavigationProperty);
                     IEdmProperty edmProperty = EdmUtility.FindEdmProperty(entitySet.EntityType(), selectionName);

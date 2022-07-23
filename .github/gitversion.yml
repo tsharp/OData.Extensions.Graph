@@ -5,7 +5,7 @@ branches:
   release:
     regex: ^release?[/-]
     tag: ""
-    increment: Patch
+    increment: Minor
     prevent-increment-of-merged-branch-version: false
   feature:
     tag: "dev"

@@ -1,8 +1,10 @@
 # https://gitversion.net/docs/reference/configuration#branch-configuration
 mode: ContinuousDeployment
+continuous-delivery-fallback-tag: ""
 branches:
   release:
     tag: ""
+    increment: Patch
   feature:
     tag: "dev"
   main:

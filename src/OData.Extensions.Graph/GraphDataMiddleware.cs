@@ -74,6 +74,8 @@ namespace OData.Extensions.Graph
 
         private async Task<bool> HandleRequestAsync(HttpContext context, ODataUriParser parser, OperationTranslator translator)
         {
+            ODataResponse response = new ODataResponse();
+            
             TranslatedOperation operation = null;
             IDictionary<string, object> variables = null;
 
@@ -121,8 +123,7 @@ namespace OData.Extensions.Graph
                         return true;
                 }
 
-                var result = await ExecuteGraphQuery(context, operationBinding, operation.PathSegment, operation.DocumentNode);
-                await SendResponseObjectAsync(context, result);
+                response = await ExecuteGraphQuery(context, operationBinding, operation.PathSegment, operation.DocumentNode);                
             }
             catch (ODataUnrecognizedPathException)
             {
@@ -183,6 +184,7 @@ namespace OData.Extensions.Graph
                 await SendResponseObjectAsync(context, result, StatusCodes.Status500InternalServerError);
             }
 
+            await response.WriteAsync(context.Response, context.RequestAborted);
 
             return true;
         }
@@ -199,14 +201,22 @@ namespace OData.Extensions.Graph
                 context.RequestAborted);
         }
 
-        private async Task<object> ExecuteGraphQuery(HttpContext context, OperationBinding binding, string entitySet, DocumentNode document, IDictionary<string, object> variables = null)
+        private async Task<ODataResponse> ExecuteGraphQuery(HttpContext context, OperationBinding binding, string entitySet, DocumentNode document, IDictionary<string, object> variables = null)
         {
-            var response = new Dictionary<string, object>()
+            var response = new ODataResponse();
+            
+            // TODO: Update base endpoint.
+            response.WithContext($"{context.Request.Scheme}://{context.Request.Host}/api/$metadata#{entitySet}");
+
+#if DEBUG
+            response.WithDebug("pathSegment", entitySet);
+            response.WithDebug("operation", binding?.Operation ?? "_unknown_");
+
+            if (document != null)
             {
-                //["@odata.context"] = null,
-                //["@odata.next"] = null,
-                //["@odata.count"] = null,
-            };
+                response.WithDebug("commandText", document.ToString(true));
+            }
+#endif
 
             try
             {
@@ -230,34 +240,26 @@ namespace OData.Extensions.Graph
 
                 if (result.Errors?.Any() == true)
                 {
+                    response.WithStatusCode(500);
+                    
                     var errors = result.Errors.Select(e => new {
                         message = e.Message ?? e.ToString(),
                         type = "GraphError",
                         code = e.Code
                     }).ToArray();
 
-                    response.Add("errors", errors);
-                    context.Response.StatusCode = 500;
+                    response.WithErrors(errors);
 
-#if DEBUG
-                    response.Add("@odata.debug_pathSegment", entitySet);
-                    response.Add("@odata.debug_operation", binding.Operation);
-                    
-                    if (document != null)
-                    {
-                        response.Add("@odata.debug_commandText", document.ToString(true));
-                    }
-#endif
 
-                    if (response.Any(e => e.Key == ErrorCodes.Authentication.NotAuthenticated))
+                    if (errors.Any(e => e.code == ErrorCodes.Authentication.NotAuthenticated))
                     {
-                        context.Response.StatusCode = 401;
+                        response.WithStatusCode(401);
                         return response;
                     }
 
-                    if (response.Any(e => e.Key == ErrorCodes.Authentication.NotAuthorized))
+                    if (errors.Any(e => e.code == ErrorCodes.Authentication.NotAuthorized))
                     {
-                        context.Response.StatusCode = 403;
+                        response.WithStatusCode(403);
                         return response;
                     }
 
@@ -270,8 +272,7 @@ namespace OData.Extensions.Graph
                 {
                     // TODO: Use model to resolve metadata
                     // TODO: Fixme, add operation bindings for remote schemas too.
-                    response.Add("@odata.context", $"https://some.random-api.com/api/$metadata#{entitySet}");
-
+                    
                     // WARN: This may be a ResultMapList
                     var queryResultData = queryResult.Data[binding?.Operation ?? entitySet];
                     
@@ -280,24 +281,19 @@ namespace OData.Extensions.Graph
 
                     if(resultData != null && resultData.GetType().IsArray)
                     {
-                        response.Add("value", resultData);
+                        response.WithValues((object[])resultData);
                     }
                     else if(resultData != null)
                     {
                         var resultObject = resultData as IDictionary<string, object>;
 
-                        // Merge data ...
-                        foreach(var item in resultObject)
+                        if (resultObject.ContainsKey("items"))
                         {
-                            var key = item.Key;
-
-                            if(item.Key == "items")
-                            {
-                                key = "value";
-                            }
-
-                            response.Add(key, item.Value);
+                            resultObject.Add("value", resultObject["items"]);
+                            resultObject.Remove("items");
                         }
+
+                        response.WithProperties(resultObject);
                     }
 
                     return response;
@@ -309,7 +305,7 @@ namespace OData.Extensions.Graph
             catch (Exception)
             {
                 // I am not sure what kind of exceptions to expect here
-                context.Response.StatusCode = 400;
+                response.WithStatusCode(400);
                 return response;
             }
         }

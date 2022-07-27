@@ -3,6 +3,7 @@ using GraphQLSample.Api.Dto;
 using HotChocolate.Types;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -91,7 +92,12 @@ namespace GraphQLSample.Api
             // app.UseHttpsRedirection();
 
             // 1.1 Use forwarded headers since containers are behind a proxy.
-            app.UseForwardedHeaders();
+            var options = new ForwardedHeadersOptions();
+            options.KnownProxies.Clear();
+            options.KnownNetworks.Clear();
+            options.ForwardedHeaders = ForwardedHeaders.All;
+            
+            app.UseForwardedHeaders(options);
 
             // 1.2 Use configured request scheme
             // https://docs.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer?view=aspnetcore-3.1

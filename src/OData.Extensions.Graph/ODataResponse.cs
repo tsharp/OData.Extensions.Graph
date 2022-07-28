@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
+using OData.Extensions.Graph.Core;
 using System.Collections.Generic;
+using System.Net;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,7 +10,7 @@ namespace OData.Extensions.Graph
 {
     internal class ODataResponse
     {
-        private readonly IDictionary<string, object> responseData = new Dictionary<string, object>();
+        private readonly IDictionary<string, object> responseData = new SafeDictionary<string, object>();
         private int statusCode = 200;
         
         public ODataResponse WithContext(string value)
@@ -73,6 +75,13 @@ namespace OData.Extensions.Graph
         public ODataResponse WithStatusCode(int statusCode)
         {
             this.statusCode = statusCode;
+
+            return this;
+        }
+        
+        public ODataResponse WithStatusCode(HttpStatusCode statusCode)
+        {
+            this.statusCode = (int)statusCode;
 
             return this;
         }

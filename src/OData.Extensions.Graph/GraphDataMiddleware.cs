@@ -133,72 +133,31 @@ namespace OData.Extensions.Graph
             }
             catch (ODataException ex)
             {
-                var result = new Dictionary<string, object>()
-                {
-                    ["@odata.context"] = "https://some.random-api.com/api/$metadata#Edm.String",
-                    //["@odata.next"] = null,
-                    //["@odata.count"] = null,
-                    ["errors"] = new object[]
-                        {
-                            new {
-                                message = ex.Message,
-                                type = "ODataError"
-                            }
+                response
+                    .WithErrors(new[] {
+                        new {
+                            message = ex.Message,
+                            type = "ODataError"
                         }
-                };
-
-#if DEBUG
-                if (operation != null)
-                {
-                    result.Add("debug_commandText", operation.DocumentNode.ToString(true));
-                    result.Add("debug_pathSegment", operation.PathSegment);
-                }
-#endif
-
-                await SendResponseObjectAsync(context, result, StatusCodes.Status500InternalServerError);
+                    })
+                    .WithStatusCode(StatusCodes.Status500InternalServerError);
             }
             catch (Exception ex)
             {
-                var result = new Dictionary<string, object>()
-                {
-                    ["@odata.context"] = "https://some.random-api.com/api/$metadata#Edm.String",
-                    //["@odata.next"] = null,
-                    //["@odata.count"] = null,
-                    ["errors"] = new object[]
-                        {
-                            new {
-                                message = ex.Message,
-                                type = "InternalError"
-                            }
+                response
+                    .WithErrors(new object[]
+                    {
+                        new {
+                            message = ex.Message,
+                            type = "InternalError"
                         }
-                };
-
-#if DEBUG
-                if (operation != null)
-                {
-                    result.Add("debug_commandText", operation.DocumentNode.ToString(true));
-                    result.Add("debug_pathSegment", operation.PathSegment);
-                }
-#endif
-
-                await SendResponseObjectAsync(context, result, StatusCodes.Status500InternalServerError);
+                    })
+                    .WithStatusCode(StatusCodes.Status500InternalServerError);
             }
 
             await response.WriteAsync(context.Response, context.RequestAborted);
 
             return true;
-        }
-
-        private async Task SendResponseObjectAsync(HttpContext context, object data, int statusCode = 200)
-        {
-            context.Response.ContentType = "application/json";
-            context.Response.StatusCode = statusCode;
-            await JsonSerializer.SerializeAsync(
-                context.Response.Body,
-                data,
-                typeof(object),
-                Constants.Serialization.Reading,
-                context.RequestAborted);
         }
 
         private async Task<ODataResponse> ExecuteGraphQuery(HttpContext context, OperationBinding binding, string entitySet, DocumentNode document, IDictionary<string, object> variables = null)

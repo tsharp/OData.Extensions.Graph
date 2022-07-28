@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using OData.Extensions.Graph.Core;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Text.Json;
 using System.Threading;
@@ -30,13 +31,6 @@ namespace OData.Extensions.Graph
         public ODataResponse WithNext(string value)
         {
             responseData.Add("@odata.next", value);
-
-            return this;
-        }
-
-        public ODataResponse WithError(string value)
-        {
-            responseData.Add("error", value);
 
             return this;
         }
@@ -91,8 +85,13 @@ namespace OData.Extensions.Graph
             response.ContentType = "application/json; charset=utf-8";
             response.StatusCode = statusCode;
 
+            await WriteAsync(response.Body, cancellationToken);
+        }
+
+        public async Task WriteAsync(Stream stream, CancellationToken cancellationToken)
+        {
             await JsonSerializer.SerializeAsync(
-                response.Body,
+                stream,
                 responseData,
                 typeof(object),
                 Constants.Serialization.Writing,
